@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green: #16A34B;
+  --green-dark: #0E7A38;
+  --green-tint: #C9EBD7;
+  --green-tint-2: #E3F6EA;
+  --amber: #C87F0A;
+  --red: #C0392B;
+  --indigo: #3D3B74;
+  --ink: #16181D;
+  --ink-2: #4B5058;
+  --muted: #8A8F98;
+  --line: #E7E9EC;
+  --page-bg: #F6F7F9;
+  --card-bg: #FFFFFF;
+  --rail-dark: #1E1F22;
+  --radius: 12px;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--page-bg);
+  color:var(--ink);
+  display:flex;
+  min-height:100vh;
+}
+a{ color:inherit; text-decoration:none; }
+button{ font-family:inherit; }
+
+/* ---------- Icon rail ---------- */
+.rail{ width:64px; background:#E9E9E9; border-right:1px solid #d4d4d4; display:flex; flex-direction:column; flex-shrink:0; transition:width .15s ease; overflow:hidden; }
+.rail.expanded{ width:212px; }
+.rail-header{ background:#333333; height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 14px; flex-shrink:0; cursor:pointer; }
+.rail.expanded .rail-header{ padding:0 16px; }
+.logo-row{ display:flex; align-items:center; gap:9px; min-width:0; }
+.logo-swirl{ width:26px; height:26px; flex-shrink:0; }
+.wordmark{ display:none; flex-direction:column; line-height:1.1; overflow:hidden; }
+.rail.expanded .wordmark{ display:flex; }
+.word-main{ color:#fff; font-size:13.5px; font-weight:800; letter-spacing:.03em; white-space:nowrap; }
+.word-sub{ color:var(--green); font-size:9px; font-weight:700; letter-spacing:.12em; white-space:nowrap; }
+.chevron-btn{ background:none; border:none; color:#c7c7c7; cursor:pointer; padding:4px; flex-shrink:0; display:flex; }
+.chevron-btn svg{ width:15px; height:15px; transition:transform .15s ease; }
+.rail.expanded .chevron-btn svg{ transform:rotate(180deg); }
+.rail nav{ display:flex; flex-direction:column; gap:2px; width:100%; padding:10px 8px; }
+.rail-item{ height:40px; display:flex; align-items:center; gap:12px; border-radius:9px; color:#4b4b4b; position:relative; cursor:pointer; padding:0 10px; white-space:nowrap; }
+.rail-item svg{ width:19px; height:19px; flex-shrink:0; }
+.rail-item .label{ display:none; font-size:13.5px; font-weight:600; }
+.rail.expanded .rail-item .label{ display:inline; }
+.rail.expanded .rail-item{ justify-content:flex-start; }
+.rail:not(.expanded) .rail-item{ justify-content:center; padding:0; }
+.rail-item.active{ background:var(--green-tint-2); color:var(--green-dark); }
+.rail-item:hover:not(.active){ background:#dcdcdc; color:#232323; }
+.rail-item .tip{ position:absolute; left:52px; top:50%; transform:translateY(-50%); background:var(--ink); color:#fff; font-size:11.5px; font-weight:600; padding:5px 9px; border-radius:6px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s ease; z-index:20; }
+.rail:not(.expanded) .rail-item:hover .tip{ opacity:1; }
+.rail.expanded .tip{ display:none; }
+
+/* ---------- Shell ---------- */
+.shell{ flex:1; display:flex; flex-direction:column; min-width:0; }
+.topbar{ height:64px; background:#fff; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:flex-end; gap:12px; padding:0 28px; flex-shrink:0; }
+.btn-new{ display:flex; align-items:center; gap:6px; background:var(--green-tint); color:var(--green-dark); font-weight:700; font-size:13.5px; padding:9px 16px 9px 13px; border-radius:20px; border:1px solid transparent; cursor:pointer; }
+.btn-new svg{ width:15px; height:15px; }
+.btn-new:hover{ background:#b7e4c9; }
+.avatar{ width:36px; height:36px; border-radius:50%; background:var(--green-tint); color:var(--green-dark); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; cursor:pointer; }
+
+/* ---------- Main ---------- */
+main{ padding:28px 32px 60px; max-width:1200px; width:100%; margin:0 auto; }
+.page-title{ font-size:26px; font-weight:800; letter-spacing:-.02em; margin:0 0 4px; }
+.page-sub{ font-size:13.5px; color:var(--muted); margin:0 0 24px; }
+.page-view{ animation: fade .12s ease; }
+@keyframes fade{ from{opacity:0;} to{opacity:1;} }
+
+.card{ background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:20px; box-shadow:0 1px 2px rgba(16,24,40,.03); }
+.card-head{ display:flex; align-items:flex-start; justify-content:space-between; padding:18px 22px 16px; }
+.card-head h2{ font-size:15px; font-weight:700; margin:0 0 3px; }
+.card-head p{ font-size:12.5px; color:var(--muted); margin:0; }
+
+.segmented{ display:flex; background:#F1F2F4; border-radius:8px; padding:3px; gap:2px; flex-shrink:0; }
+.segmented button{ border:none; background:transparent; font-size:12px; font-weight:600; color:var(--muted); padding:6px 11px; border-radius:6px; cursor:pointer; }
+.segmented button.active{ background:var(--rail-dark); color:#fff; }
+.segmented button:hover:not(.active){ color:var(--ink-2); }
+
+.stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; padding:0 22px 22px; }
+.stat{ background:#FAFAFB; border:1px solid var(--line); border-radius:10px; padding:16px 16px 14px; }
+.stat .label{ font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+.stat .value{ font-size:23px; font-weight:800; letter-spacing:-.01em; }
+.stat .value.green{ color:var(--green); }
+.stat .caption{ font-size:11.5px; color:var(--muted); margin-top:5px; }
+
+.tabs{ display:flex; gap:22px; padding:0 22px; border-bottom:1px solid var(--line); }
+.tab{ font-size:13px; font-weight:600; color:var(--muted); padding:10px 2px 12px; border-bottom:2px solid transparent; cursor:pointer; }
+.tab.active{ color:var(--green-dark); border-bottom-color:var(--green); }
+
+table{ width:100%; border-collapse:collapse; }
+.dash-table thead th{ text-align:left; font-size:10.5px; font-weight:700; letter-spacing:.05em; color:var(--muted); text-transform:uppercase; background:#FAFAFB; padding:11px 22px; border-bottom:1px solid var(--line); }
+.dash-table tbody td{ padding:14px 22px; font-size:13.5px; border-bottom:1px solid var(--line); }
+.dash-table tbody tr:last-child td{ border-bottom:none; }
+td.name{ font-weight:700; }
+td.muted{ color:var(--ink-2); }
+td.green{ color:var(--green); font-weight:700; }
+td.bold-green{ color:var(--green-dark); font-weight:700; }
+.empty-hint{ padding:26px 22px 30px; font-size:13px; color:var(--muted); }
+
+.page-head-row{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.page-head-row .page-title{ margin:0; }
+.add-btn{ display:flex; align-items:center; gap:4px; background:var(--green); color:#fff; font-weight:700; font-size:12.5px; padding:6px 12px 6px 10px; border-radius:7px; border:none; cursor:pointer; }
+.add-btn svg{ width:13px; height:13px; }
+.add-btn:hover{ background:var(--green-dark); }
+
+.table-card{ background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+.data-table{ width:100%; border-collapse:collapse; }
+.data-table thead th{ text-align:left; font-size:12.5px; font-weight:600; color:var(--muted); background:#fff; padding:13px 20px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.data-table tbody td{ padding:13px 20px; font-size:13px; border-bottom:1px solid var(--line); color:var(--ink); white-space:nowrap; }
+.data-table tbody tr:last-child td{ border-bottom:none; }
+.data-table th:first-child, .data-table td:first-child{ width:40px; padding-right:0; }
+
+.chk{ width:16px; height:16px; border:1.6px solid var(--green); border-radius:4px; display:inline-block; background:#fff; cursor:pointer; }
+.row-actions{ display:flex; align-items:center; gap:10px; }
+.row-actions svg{ width:15px; height:15px; stroke:var(--green); cursor:pointer; }
+.row-actions svg:hover{ stroke:var(--green-dark); }
+.row-actions span.icon-muted svg{ stroke:var(--muted); }
+.row-actions span.icon-red svg{ stroke:var(--red); }
+.row-actions span.icon-indigo svg{ stroke:var(--indigo); }
+
+.chip-text{ font-weight:700; font-size:12.5px; letter-spacing:.02em; }
+.chip-text.s-pending{ color:var(--amber); }
+.chip-text.s-good{ color:var(--green); }
+.chip-text.s-rejected{ color:var(--red); }
+
+.avatar-sm{ width:26px; height:26px; border-radius:50%; background:#E5E7EB; display:inline-block; vertical-align:middle; margin-right:9px; }
+.name-cell{ font-weight:600; display:flex; align-items:center; }
+.table-footer{ display:flex; justify-content:flex-end; align-items:center; gap:6px; padding:12px 20px; font-size:12px; color:var(--muted); }
+.table-footer b{ color:var(--ink-2); font-weight:700; }
+
+.section-title{ font-size:16px; font-weight:800; margin:22px 0 14px; }
+.remit-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:8px; }
+.remit-card{ background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; }
+.remit-name{ font-size:13.5px; font-weight:700; margin-bottom:12px; }
+.remit-meta-row{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; }
+.remit-meta{ font-size:11.5px; color:var(--muted); margin-bottom:6px; }
+.remit-amount{ font-size:16px; font-weight:800; color:var(--green); }
+.log-btn{ background:var(--indigo); color:#fff; border:none; border-radius:7px; font-size:12px; font-weight:700; padding:8px 14px; cursor:pointer; white-space:nowrap; }
+.log-btn:hover{ background:#2E2C59; }
+.log-btn:disabled{ background:#C9C8D6; cursor:not-allowed; }
+
+/* ---------- Modal ---------- */
+.modal-overlay{ position:fixed; inset:0; background:rgba(20,22,26,.45); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.modal-box{ background:#fff; border-radius:14px; width:100%; max-width:460px; max-height:88vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.modal-head{ padding:20px 22px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+.modal-head h3{ margin:0; font-size:16px; font-weight:800; }
+.modal-close{ cursor:pointer; color:var(--muted); background:none; border:none; padding:4px; }
+.modal-close svg{ width:18px; height:18px; }
+.modal-body{ padding:18px 22px; display:flex; flex-direction:column; gap:14px; }
+.field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-2); margin-bottom:6px; }
+.field input, .field select, .field textarea{
+  width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 11px; font-size:13.5px;
+  font-family:inherit; color:var(--ink); background:#fff;
+}
+.field input:focus, .field select:focus, .field textarea:focus{ outline:2px solid var(--green-tint); border-color:var(--green); }
+.field-row{ display:flex; gap:12px; }
+.field-row .field{ flex:1; }
+.modal-foot{ padding:16px 22px 20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--line); }
+.btn{ border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; }
+.btn-primary{ background:var(--green); color:#fff; }
+.btn-primary:hover{ background:var(--green-dark); }
+.btn-secondary{ background:#F1F2F4; color:var(--ink-2); }
+.btn-secondary:hover{ background:#E5E7EB; }
+.btn-danger{ background:#FBEAE8; color:var(--red); }
+.btn-danger:hover{ background:#f6d5d1; }
+.detail-row{ display:flex; justify-content:space-between; font-size:13.5px; padding:7px 0; border-bottom:1px dashed var(--line); }
+.detail-row:last-child{ border-bottom:none; }
+.detail-row span:first-child{ color:var(--muted); }
+.detail-row span:last-child{ font-weight:600; }
+
+/* ---------- Toasts ---------- */
+.toast-stack{ position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:8px; z-index:200; }
+.toast{
+  background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:11px 16px; border-radius:9px;
+  box-shadow:0 8px 24px rgba(0,0,0,.2); max-width:320px; animation: toast-in .18s ease;
+  display:flex; align-items:center; gap:8px;
+}
+.toast .dot{ width:7px; height:7px; border-radius:50%; background:var(--green); flex-shrink:0; }
+@keyframes toast-in{ from{ opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+@media (max-width:900px){ .remit-grid{ grid-template-columns:1fr; } }
+@media (max-width:820px){ .stat-grid{ grid-template-columns:repeat(2,1fr); } main{ padding:20px 14px 40px; } }
+
+/* ---------- Profile ---------- */
+.profile-card{ background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); padding:32px 36px 36px; position:relative; }
+.profile-edit-btn{ position:absolute; top:20px; right:22px; }
+.profile-avatar-row{ display:flex; flex-direction:column; align-items:center; margin-bottom:26px; }
+.profile-avatar{ width:64px; height:64px; border-radius:50%; background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px; margin-bottom:10px; }
+.profile-section-title{ text-align:center; font-size:14px; font-weight:800; margin:0 0 14px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+.profile-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px 24px; margin-bottom:30px; }
+.profile-field label{ display:block; font-size:11px; color:var(--muted); font-weight:600; margin-bottom:6px; }
+.profile-field .box{ background:var(--page-bg); border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:13.5px; font-weight:700; color:var(--ink); }
+.ledger-filter{ border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:13px; font-family:inherit; width:240px; }
+.bell-btn{ position:relative; background:none; border:none; color:var(--ink-2); cursor:pointer; padding:6px; margin-right:10px; display:flex; }
+.bell-btn svg{ width:21px; height:21px; }
+.bell-btn:hover{ color:var(--ink); }
+.bell-badge{ position:absolute; top:0; right:0; background:var(--red); color:#fff; font-size:10px; font-weight:800; min-width:16px; height:16px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+.toggle{ position:relative; width:40px; height:22px; flex-shrink:0; cursor:pointer; }
+.toggle input{ opacity:0; width:0; height:0; }
+.toggle .track{ position:absolute; inset:0; background:#d3d6da; border-radius:11px; transition:background .15s; }
+.toggle .track::after{ content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; background:#fff; border-radius:50%; transition:left .15s; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+.toggle input:checked + .track{ background:var(--green); }
+.toggle input:checked + .track::after{ left:20px; }
+.pref-row{ display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line); gap:16px; }
+.pref-row:last-child{ border-bottom:none; }
+.pref-row .pr-name{ font-size:13.5px; font-weight:700; }
+.pref-row .pr-desc{ font-size:12px; color:var(--muted); margin-top:2px; }
+.notif-row{ display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--line); align-items:flex-start; }
+.notif-row:last-child{ border-bottom:none; }
+.notif-row.unread{ background:var(--green-tint-2); margin:0 -22px; padding-left:22px; padding-right:22px; }
+.notif-dot{ width:8px; height:8px; border-radius:50%; background:var(--green); margin-top:6px; flex-shrink:0; }
+.notif-row .nr-msg{ font-size:13.5px; }
+.notif-row .nr-meta{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+.chan-chip{ display:inline-block; font-size:10px; font-weight:800; letter-spacing:.04em; padding:2px 7px; border-radius:9px; background:var(--green-tint); color:var(--green-dark); margin-left:6px; }
+.chan-chip.push{ background:#E4E3F4; color:var(--indigo); }
+.chan-chip.inapp{ background:#FBEFD9; color:var(--amber); }
+
+/* ---------- Page transitions ---------- */
+@keyframes pageIn{
+  from{ opacity:0; transform:translateY(12px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+@keyframes riseIn{
+  from{ opacity:0; transform:translateY(16px) scale(.985); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+.page-view.animate-in > *{ animation:riseIn .38s cubic-bezier(.22,.9,.3,1) both; }
+.page-view.animate-in > *:nth-child(1){ animation-delay:0s; }
+.page-view.animate-in > *:nth-child(2){ animation-delay:.05s; }
+.page-view.animate-in > *:nth-child(3){ animation-delay:.10s; }
+.page-view.animate-in > *:nth-child(4){ animation-delay:.15s; }
+.page-view.animate-in > *:nth-child(5){ animation-delay:.20s; }
+.page-view.animate-in > *:nth-child(6){ animation-delay:.25s; }
+.page-view.animate-in > *:nth-child(n+7){ animation-delay:.30s; }
+@media (prefers-reduced-motion: reduce){
+  .page-view.animate-in > *{ animation:none; }
+}
+
+/* ---------- Tutorial / mascot ---------- */
+.help-btn{ position:relative; background:none; border:none; color:var(--ink-2); cursor:pointer; padding:6px; margin-right:6px; display:flex; }
+.help-btn svg{ width:21px; height:21px; }
+.help-btn:hover{ color:var(--ink); }
+.tour-backdrop{ position:fixed; inset:0; background:rgba(22,24,29,.35); z-index:200; animation:pageIn .25s both; }
+.tour-panel{ position:fixed; right:28px; bottom:24px; z-index:201; display:flex; align-items:flex-end; gap:14px; max-width:520px; }
+.tour-mascot{ width:120px; flex-shrink:0; filter:drop-shadow(0 6px 14px rgba(0,0,0,.22)); animation:mascotBob 2.6s ease-in-out infinite; }
+@keyframes mascotBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
+.tour-bubble{ background:#fff; border:1px solid var(--line); border-radius:16px; border-bottom-right-radius:4px; padding:18px 20px 14px; box-shadow:0 12px 30px rgba(16,24,40,.18); animation:riseIn .35s cubic-bezier(.22,.9,.3,1) both; }
+.tour-step-tag{ font-size:10.5px; font-weight:800; letter-spacing:.08em; color:var(--green-dark); text-transform:uppercase; margin-bottom:5px; }
+.tour-title{ font-size:16px; font-weight:800; margin:0 0 7px; }
+.tour-text{ font-size:13.5px; line-height:1.55; color:var(--ink-2); margin:0 0 6px; }
+.tour-problem{ background:#FDF3E7; border-left:3px solid var(--amber); border-radius:0 8px 8px 0; padding:8px 11px; font-size:12.5px; color:#7a5312; margin:9px 0 4px; }
+.tour-problem b{ color:var(--amber); }
+.tour-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:12px; gap:10px; }
+.tour-dots{ display:flex; gap:5px; }
+.tour-dots .td{ width:7px; height:7px; border-radius:50%; background:#d7dade; transition:background .2s; }
+.tour-dots .td.on{ background:var(--green); }
+.tour-btns{ display:flex; gap:8px; }
+.tour-skip{ background:none; border:none; color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer; padding:6px 4px; }
+.tour-skip:hover{ color:var(--ink); }
+@media (prefers-reduced-motion: reduce){ .tour-mascot{ animation:none; } }
+
+/* ---------- Intro video ---------- */
+.intro-overlay{ position:fixed; inset:0; background:#0d0e10; z-index:300; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px; transition:opacity .5s ease; }
+.intro-overlay.fade-out{ opacity:0; pointer-events:none; }
+.intro-overlay video{ max-width:min(1100px, 92vw); max-height:78vh; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.5); background:#000; }
+.intro-skip{ background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; padding:9px 20px; border-radius:20px; cursor:pointer; }
+.intro-skip:hover{ background:rgba(255,255,255,.2); }
+</style>
+</head>
+<body>
+
+  <aside class="rail" id="rail">
+    <div class="rail-header" id="railToggle">
+      <div class="logo-row">
+        <svg class="logo-swirl" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.6"><path d="M16.5 4.5c-4.5 0-8 3.5-8 8 0 3 1.7 5 4 5 2 0 3.5-1.5 3.5-3.5 0-1.6-1-2.5-2.3-2.5-1 0-1.7.7-1.7 1.6"/></svg>
+        <div class="wordmark"><span class="word-main">TARTIGRADE</span><span class="word-sub">LIMITED</span></div>
+      </div>
+      <button class="chevron-btn" title="Expand / collapse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17l5-5-5-5M13 17l5-5-5-5"/></svg>
+      </button>
+    </div>
+    <nav>
+      <a class="rail-item active" href="#" data-target="index"><span class="tip">Dashboard</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="label">Dashboard</span></a>
+      <a class="rail-item" href="#" data-target="approvals"><span class="tip">Approvals</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12l2.5 2.5L16 9"/></svg><span class="label">Approvals</span></a>
+      <a class="rail-item" href="#" data-target="sales"><span class="tip">Sales</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg><span class="label">Sales</span></a>
+      <a class="rail-item" href="#" data-target="remittances"><span class="tip">Remitances</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10" y1="18" x2="14" y2="18"/></svg><span class="label">Remitances</span></a>
+      <a class="rail-item" href="#" data-target="counterparties"><span class="tip">Counterparties</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2.2"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.8 2.8M15.2 15.2L18 18M18 6l-2.8 2.8M8.8 15.2L6 18"/></svg><span class="label">Counterparties</span></a>
+      <a class="rail-item" href="#" data-target="users"><span class="tip">Users</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="label">Users</span></a>
+      <a class="rail-item" href="#" data-target="teams"><span class="tip">Teams</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.8"/><path d="M3 21c0-3.4 2.9-6 6.5-6S16 17.6 16 21M15 15.2c2.6.3 4.6 2.4 4.6 5.3"/></svg><span class="label">Teams</span></a>
+      <a class="rail-item" href="#" data-target="inventory"><span class="tip">Inventory</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 002 2h12a2 2 0 002-2V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg><span class="label">Inventory</span></a>
+      <a class="rail-item" href="#" data-target="loans"><span class="tip">Loans</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg><span class="label">Loans</span></a>
+      <a class="rail-item" href="#" data-target="assets"><span class="tip">Assets</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="14" height="11"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="1.6"/><circle cx="17.5" cy="19" r="1.6"/></svg><span class="label">Assets</span></a>
+      <a class="rail-item" href="#" data-target="reports"><span class="tip">Reports</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg><span class="label">Reports</span></a>
+      <a class="rail-item" href="#" data-target="rates"><span class="tip">Rate Configuration</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><span class="label">Rates</span></a>
+      <a class="rail-item" href="#" data-target="notifications"><span class="tip">Notifications</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg><span class="label">Notifications</span></a>
+    </nav>
+  </aside>
+
+  <div class="shell">
+    <header class="topbar">
+      <button class="btn-new" id="newDealBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        New Deal
+      </button>
+      <button class="help-btn" id="helpBtn" title="Take the tour">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.9 2.9 0 015.6 1c0 1.9-2.8 2.4-2.8 4"/><circle cx="12" cy="17.6" r=".4" fill="currentColor"/></svg>
+      </button>
+      <button class="bell-btn" id="bellBtn" title="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        <span class="bell-badge" id="bellBadge" style="display:none">0</span>
+      </button>
+      <div class="avatar" id="topAvatar">AU</div>
+    </header>
+
+    <main>
+      <section class="page-view" id="view-index"></section>
+      <section class="page-view" id="view-sales" style="display:none"></section>
+      <section class="page-view" id="view-approvals" style="display:none"></section>
+      <section class="page-view" id="view-counterparties" style="display:none">
+        <h1 class="page-title">Counterparties</h1>
+        <p class="page-sub">Customers and partners receiving orders</p>
+        <section class="card"><div class="card-head"><div><h2>Counterparties</h2><p>This screen is pending a full-resolution export from Figma</p></div></div>
+        <div class="empty-hint">Export this frame at 2x from Figma and upload it &mdash; I'll rebuild this page to match exactly.</div></section>
+      </section>
+      <section class="page-view" id="view-inventory" style="display:none">
+        <h1 class="page-title">Inventory</h1>
+        <p class="page-sub">Products and stock on hand</p>
+        <section class="card"><div class="card-head"><div><h2>Inventory</h2><p>This screen is pending a full-resolution export from Figma</p></div></div>
+        <div class="empty-hint">Export this frame at 2x from Figma and upload it &mdash; I'll rebuild this page to match exactly.</div></section>
+      </section>
+      <section class="page-view" id="view-loans" style="display:none"></section>
+      <section class="page-view" id="view-assets" style="display:none"></section>
+      <section class="page-view" id="view-users" style="display:none"></section>
+      <section class="page-view" id="view-teams" style="display:none"></section>
+      <section class="page-view" id="view-remittances" style="display:none"></section>
+      <section class="page-view" id="view-reports" style="display:none"></section>
+      <section class="page-view" id="view-rates" style="display:none"></section>
+      <section class="page-view" id="view-notifications" style="display:none"></section>
+      <section class="page-view" id="view-profile" style="display:none"></section>
+    </main>
+  </div>
+
+  <div class="intro-overlay" id="introOverlay">
+    <video id="introVideo" src="Asset_Tracker_Improvements.mp4" controls autoplay playsinline></video>
+    <button class="intro-skip" onclick="finishIntro()">Skip intro &rarr;</button>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="tourRoot"></div>
+  <div class="toast-stack" id="toastStack"></div>
+
+<script>
+/* =========================================================================
+   ICONS
+   ========================================================================= */
+const ICON = {
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  plusSmall: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  dollar: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 15s1 1.5 3 1.5 3-1 3-2.3-1.3-1.9-3-2.2-3-1-3-2.2S10 8 12 8s3 1.5 3 1.5M12 6.5v11"/></svg>',
+  truck: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="14" height="11"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="1.6"/><circle cx="17.5" cy="19" r="1.6"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h14l-3 4 3 4H5"/></svg>',
+  dcheck: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l4 4L15 7"/><path d="M10 15l1.5 1.5L21 7"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>',
+};
+
+/* =========================================================================
+   STATE  (seeded to roughly match the exported Figma screens)
+   ========================================================================= */
+let seq = 256;
+const nextId = (p) => p + (seq++);
+
+const state = {
+  currentUser: { name: 'Alex Umeh', initials: 'AU', role: 'Admin' },
+  products: [
+    { id: 'P1', name: 'Gloves (S)', price: 100 },
+    { id: 'P2', name: 'Steel Pipe 2in', price: 250 },
+    { id: 'P3', name: 'Safety Helmet', price: 60 },
+  ],
+  counterparties: ['Baire Patch', 'Vantage Energy', 'Northline Supply'],
+  users: [
+    { id: 'U1', name: 'Leila Pollock', roles: 'Sales', email: 'leila.pollock@ttgteams.com', dept: 'Sales', commission: 5, status: 'Active', team: 'Calgary' },
+    { id: 'U2', name: 'Jordan Grose', roles: 'Sales', email: 'jordan.grose@ttgteams.com', dept: 'Sales', commission: 5, status: 'Active', team: 'Calgary' },
+    { id: 'U3', name: 'Louih Bastien Fileuey Chabot', roles: 'Sales', email: 'louih.chabot@ttgteams.com', dept: 'Sales', commission: 5, status: 'Active', team: 'Calgary' },
+    { id: 'U4', name: 'John Doe', roles: 'Sales Manager', email: 'john.doe@ttgteams.com', dept: 'Sales', commission: 10, status: 'Active', team: 'Calgary' },
+  ],
+  teams: [
+    { id: 'TM1', name: 'Calgary', manager: 'John Doe', members: 4, dept: 'Sales', commission: 10.0 },
+  ],
+  assets: [
+    { id: 'A0020', name: 'HP EliteBook 840 G8', category: 'Computer', manufacturer: 'HP', location: 'Calgary', status: 'Available', condition: 'EXCELLENT' },
+  ],
+  loans: [],
+  orders: [
+    { id: 'T0255', side: 'SELL', status: 'Complete', date: '2026-06-02', product: 'Gloves (S)', qty: 6, totalValue: 600, trader: 'Leila Pollock', counterparty: 'Baire Patch', invoiceGenerated: false, invoiceSent: false, receiptGenerated: false },
+  ],
+  counterpartyEmails: { 'Baire Patch': 'ap@bairepatch.com', 'Vantage Energy': 'accounts@vantageenergy.com', 'Northline Supply': 'billing@northlinesupply.com' },
+  fulfillmentLogs: [],
+  payoutLedger: [],
+  permissions: {
+    Admin: { manageUsers: true, approveOrders: true, configureRates: true, viewLedger: true },
+    'Sales Manager': { manageUsers: false, approveOrders: true, configureRates: false, viewLedger: true },
+    Accountant: { manageUsers: false, approveOrders: false, configureRates: false, viewLedger: true },
+    Salesperson: { manageUsers: false, approveOrders: false, configureRates: false, viewLedger: false },
+  },
+  platformConfig: { commissionRate: 0, hourlyRate: 25, kmRate: 0.55 },
+  rateHistory: [
+    { id: 1, date: '2026-05-01', by: 'Alex Umeh', field: 'Hourly Rate', from: '$22.00/hr', to: '$25.00/hr', note: 'Annual adjustment' },
+    { id: 2, date: '2026-05-01', by: 'Alex Umeh', field: 'Per-KM Rate', from: '$0.50/km', to: '$0.55/km', note: 'CRA mileage alignment' },
+  ],
+  notifPrefs: { customerEmail: true, customerPush: true, inApp: true },
+  notifications: [
+    { id: 1, ts: '2026-06-02 14:10', audience: 'Baire Patch', channel: 'EMAIL', msg: 'Order T0255 delivered \u2014 receipt available', read: true },
+  ],
+  remittances: {
+    'Leila Pollock': { unremitted: 24, balance: 18805 },
+    'Jordan Grose': { unremitted: 6, balance: 6705 },
+    'Louih Bastien Fileuey Chabot': { unremitted: 2, balance: 390 },
+  },
+  remittanceHistory: [
+    { id: 1, trader: 'Leila Pollock', date: '2025-11-18', account: '$400', method: 'CASH', status: 'CONFIRMED', confirmedBy: 'AU', notes: 'No Notes' },
+  ],
+  profile: {
+    userId: 'E0016', firstName: 'Admin', lastName: 'Test', email: '-', phone: '-',
+    address: '-', city: '-', province: '-', country: '-', postalCode: '-',
+    roles: 'E0016', department: 'Sales', location: '-', startDate: '-', status: 'Active',
+  },
+};
+
+const ORDER_LABEL = {
+  Pending: 'PENDING', Approved: 'APPROVED', Paid: 'PAID', Shipped: 'SHIPPED',
+  Delivered: 'DELIVERED', Complete: 'FILLED', Rejected: 'REJECTED',
+};
+const ORDER_CLASS = {
+  Pending: 's-pending', Approved: 's-good', Paid: 's-good', Shipped: 's-good',
+  Delivered: 's-good', Complete: 's-good', Rejected: 's-rejected',
+};
+const NEXT_ACTION = {
+  Pending: { label: 'Approve', icon: ICON.check, fn: 'approveOrder' },
+  Approved: { label: 'Mark Paid', icon: ICON.dollar, fn: 'markPaidOrder' },
+  Paid: { label: 'Ship', icon: ICON.truck, fn: 'shipOrder' },
+  Shipped: { label: 'Deliver', icon: ICON.flag, fn: 'deliverOrder' },
+  Delivered: { label: 'Complete', icon: ICON.dcheck, fn: 'completeOrder' },
+};
+
+/* =========================================================================
+   HELPERS
+   ========================================================================= */
+const money = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function toast(msg) {
+  const stack = document.getElementById('toastStack');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = '<span class="dot"></span><span>' + esc(msg) + '</span>';
+  stack.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .25s'; setTimeout(() => el.remove(), 250); }, 3200);
+}
+
+/* ---- Customer Email & Push/In-App Notifications ---- */
+let notifSeq = 100;
+function nowStamp() { const d = new Date(); return d.toISOString().slice(0, 10) + ' ' + d.toTimeString().slice(0, 5); }
+function notifyCustomer(audience, msg) {
+  const p = state.notifPrefs;
+  const channels = [];
+  if (p.customerEmail) channels.push('EMAIL');
+  if (p.customerPush) channels.push('PUSH');
+  if (p.inApp) channels.push('IN-APP');
+  if (!channels.length) return;
+  channels.forEach((ch) => state.notifications.unshift({ id: notifSeq++, ts: nowStamp(), audience, channel: ch, msg, read: false }));
+  updateBellBadge();
+  if (document.getElementById('view-notifications').style.display !== 'none') renderNotifications();
+}
+function updateBellBadge() {
+  const n = state.notifications.filter((x) => !x.read).length;
+  const b = document.getElementById('bellBadge');
+  b.style.display = n ? 'flex' : 'none';
+  b.textContent = n;
+}
+function markAllNotifsRead() { state.notifications.forEach((n) => { n.read = true; }); updateBellBadge(); renderNotifications(); }
+
+function openModal(title, bodyHtml, footHtml) {
+  const root = document.getElementById('modalRoot');
+  root.innerHTML =
+    '<div class="modal-overlay" id="modalOverlay">' +
+      '<div class="modal-box">' +
+        '<div class="modal-head"><h3>' + esc(title) + '</h3>' +
+          '<button class="modal-close" onclick="closeModal()">' + ICON.x + '</button></div>' +
+        '<div class="modal-body">' + bodyHtml + '</div>' +
+        '<div class="modal-foot">' + footHtml + '</div>' +
+      '</div>' +
+    '</div>';
+  document.getElementById('modalOverlay').addEventListener('mousedown', (e) => {
+    if (e.target.id === 'modalOverlay') closeModal();
+  });
+}
+function closeModal() { document.getElementById('modalRoot').innerHTML = ''; }
+function val(id) { return document.getElementById(id).value; }
+
+/* =========================================================================
+   ORDER LIFECYCLE  (UC-01, UC-03, UC-06, UC-07, UC-09/11, UC-13, UC-14, UC-22)
+   ========================================================================= */
+function findOrder(id) { return state.orders.find((o) => o.id === id); }
+
+function openNewDealModal() {
+  const productOpts = state.products.map((p) => '<option value="' + p.id + '">' + esc(p.name) + ' &mdash; ' + money(p.price) + '</option>').join('');
+  const cpOpts = state.counterparties.map((c) => '<option>' + esc(c) + '</option>').join('');
+  const traderOpts = state.users.filter((u) => u.roles.includes('Sales')).map((u) => '<option>' + esc(u.name) + '</option>').join('');
+  openModal('New Deal',
+    '<div class="field"><label>Trader</label><select id="ndTrader">' + traderOpts + '</select></div>' +
+    '<div class="field"><label>Counterparty</label><select id="ndCp">' + cpOpts + '</select></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>Side</label><select id="ndSide"><option>SELL</option><option>BUY</option></select></div>' +
+      '<div class="field"><label>Product</label><select id="ndProduct">' + productOpts + '</select></div>' +
+    '</div>' +
+    '<div class="field"><label>Quantity</label><input type="number" id="ndQty" value="1" min="1"></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitNewDeal()">Log Transaction</button>'
+  );
+}
+function submitNewDeal() {
+  const product = state.products.find((p) => p.id === val('ndProduct'));
+  const qty = Math.max(1, parseInt(val('ndQty'), 10) || 1);
+  const order = {
+    id: nextId('T0'), side: val('ndSide'), status: 'Pending', date: todayISO(),
+    product: product.name, qty, totalValue: product.price * qty,
+    trader: val('ndTrader'), counterparty: val('ndCp'),
+    invoiceGenerated: false, invoiceSent: false, receiptGenerated: false,
+  };
+  state.orders.unshift(order);
+  closeModal();
+  toast('Order ' + order.id + ' created \u2014 Pending Sales Manager approval');
+  renderAll();
+}
+
+function viewOrder(id) {
+  const o = findOrder(id);
+  const docButtons = [];
+  if (!o.invoiceGenerated) {
+    docButtons.push('<button class="btn btn-secondary" onclick="generateInvoice(\'' + id + '\')">Generate Invoice</button>');
+  } else if (!o.invoiceSent) {
+    docButtons.push('<button class="btn btn-secondary" onclick="sendInvoice(\'' + id + '\')">Send Invoice</button>');
+  }
+  if (['Paid', 'Shipped', 'Delivered', 'Complete'].includes(o.status) && !o.receiptGenerated) {
+    docButtons.push('<button class="btn btn-secondary" onclick="generateReceipt(\'' + id + '\')">Generate Receipt</button>');
+  }
+  if (o.status === 'Paid') {
+    docButtons.push('<button class="btn btn-secondary" onclick="openLogFulfillmentModal(\'' + id + '\')">Log Fulfillment</button>');
+  }
+  openModal('Order ' + o.id,
+    '<div class="detail-row"><span>Status</span><span>' + ORDER_LABEL[o.status] + '</span></div>' +
+    '<div class="detail-row"><span>Side</span><span>' + esc(o.side) + '</span></div>' +
+    '<div class="detail-row"><span>Date</span><span>' + fmtDate(o.date) + '</span></div>' +
+    '<div class="detail-row"><span>Product</span><span>' + esc(o.product) + ' &times; ' + o.qty + '</span></div>' +
+    '<div class="detail-row"><span>Total Value</span><span>' + money(o.totalValue) + '</span></div>' +
+    '<div class="detail-row"><span>Trader</span><span>' + esc(o.trader) + '</span></div>' +
+    '<div class="detail-row"><span>Counterparty</span><span>' + esc(o.counterparty) + '</span></div>' +
+    '<div class="detail-row"><span>Invoice</span><span>' + (o.invoiceSent ? 'Sent' : o.invoiceGenerated ? 'Generated' : 'Not generated') + '</span></div>' +
+    '<div class="detail-row"><span>Receipt</span><span>' + (o.receiptGenerated ? 'Generated' : 'Not generated') + '</span></div>' +
+    (o.rejectReason ? '<div class="detail-row"><span>Reject Reason</span><span>' + esc(o.rejectReason) + '</span></div>' : '') +
+    (docButtons.length ? '<div style="display:flex; flex-wrap:wrap; gap:8px; padding-top:6px;">' + docButtons.join('') + '</div>' : ''),
+    '<button class="btn btn-secondary" onclick="closeModal()">Close</button>'
+  );
+}
+function generateInvoice(id) {
+  const o = findOrder(id);
+  o.invoiceGenerated = true;
+  toast('Invoice generated for ' + o.id + ' \u2014 TTG/FEC branded, ready to send');
+  viewOrder(id);
+  renderAll();
+}
+function sendInvoice(id) {
+  const o = findOrder(id);
+  const email = state.counterpartyEmails[o.counterparty];
+  if (!email) { toast('Cannot send \u2014 no email on file for ' + o.counterparty); return; }
+  o.invoiceSent = true;
+  toast('Invoice emailed to ' + o.counterparty + ' (' + email + ')'); notifyCustomer(o.counterparty, 'Invoice for order ' + o.id + ' sent to ' + email);
+  viewOrder(id);
+  renderAll();
+}
+function generateReceipt(id) {
+  const o = findOrder(id);
+  if (!['Paid', 'Shipped', 'Delivered', 'Complete'].includes(o.status)) { toast('Order must be Paid before a receipt can be generated'); return; }
+  o.receiptGenerated = true;
+  toast('Receipt generated for ' + o.id + ' \u2014 logged to audit trail'); notifyCustomer(o.counterparty, 'Receipt available for order ' + o.id);
+  viewOrder(id);
+  renderAll();
+}
+function editOrder(id) {
+  const o = findOrder(id);
+  if (o.status !== 'Pending') { toast('Only Pending orders can be edited'); return; }
+  const productOpts = state.products.map((p) => '<option value="' + p.id + '"' + (p.name === o.product ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('');
+  openModal('Edit Order ' + o.id,
+    '<div class="field"><label>Product</label><select id="edProduct">' + productOpts + '</select></div>' +
+    '<div class="field"><label>Quantity</label><input type="number" id="edQty" value="' + o.qty + '" min="1"></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditOrder(\'' + id + '\')">Save</button>'
+  );
+}
+function submitEditOrder(id) {
+  const o = findOrder(id);
+  const product = state.products.find((p) => p.id === val('edProduct'));
+  o.qty = Math.max(1, parseInt(val('edQty'), 10) || 1);
+  o.product = product.name;
+  o.totalValue = product.price * o.qty;
+  closeModal();
+  toast('Order ' + o.id + ' updated');
+  renderAll();
+}
+function duplicateOrder(id) {
+  const o = findOrder(id);
+  const copy = Object.assign({}, o, { id: nextId('T0'), status: 'Pending', date: todayISO() });
+  delete copy.rejectReason;
+  state.orders.unshift(copy);
+  toast('Order duplicated as ' + copy.id + ' \u2014 Pending approval');
+  renderAll();
+}
+function approveOrder(id) { const o = findOrder(id); o.status = 'Approved'; toast('Order ' + o.id + ' approved \u2014 Accountant notified'); notifyCustomer(o.counterparty, 'Order ' + o.id + ' confirmed \u2014 payment instructions to follow'); renderAll(); }
+function rejectOrder(id) {
+  const o = findOrder(id);
+  const reason = prompt('Reason for rejecting order ' + o.id + ':');
+  if (reason === null) return;
+  o.status = 'Rejected'; o.rejectReason = reason || 'No reason given';
+  toast('Order ' + o.id + ' rejected \u2014 returned to Salesperson');
+  renderAll();
+}
+function markPaidOrder(id) { const o = findOrder(id); o.status = 'Paid'; toast('Order ' + o.id + ' marked Paid \u2014 fulfillment unlocked'); notifyCustomer(o.counterparty, 'Payment received for order ' + o.id); renderAll(); }
+function shipOrder(id) { const o = findOrder(id); o.status = 'Shipped'; toast('Order ' + o.id + ' shipped \u2014 Sales Manager notified'); notifyCustomer(o.counterparty, 'Order ' + o.id + ' has shipped'); renderAll(); }
+function deliverOrder(id) { const o = findOrder(id); o.status = 'Delivered'; toast('Order ' + o.id + ' delivered \u2014 Salesperson notified'); notifyCustomer(o.counterparty, 'Order ' + o.id + ' delivered'); renderAll(); }
+function completeOrder(id) { const o = findOrder(id); o.status = 'Complete'; toast('Order ' + o.id + ' closed'); renderAll(); }
+
+/* =========================================================================
+   FULFILLMENT LOGGING  (UC-04 Log Packing & Delivery Time, UC-05 Log Distance Driven)
+   ========================================================================= */
+function openLogFulfillmentModal(orderId) {
+  const o = findOrder(orderId);
+  if (o.status !== 'Paid') { toast('Logging is blocked until the order is marked Paid'); return; }
+  const workerOpts = state.users.map((u) => '<option>' + esc(u.name) + '</option>').join('');
+  openModal('Log Fulfillment \u2014 ' + o.id,
+    '<div class="field"><label>Fulfillment Worker</label><select id="flWorker">' + workerOpts + '</select></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>Packing &amp; Delivery Hours</label><input type="number" step="0.25" id="flHours" value="1"></div>' +
+      '<div class="field"><label>Distance Driven (km)</label><input type="number" step="1" id="flKm" value="0"></div>' +
+    '</div>' +
+    '<div class="field"><label><input type="checkbox" id="flVehicle" style="width:auto; margin-right:6px;">Personal vehicle used</label></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitFulfillmentLog(\'' + orderId + '\')">Log &amp; Calculate</button>'
+  );
+}
+function submitFulfillmentLog(orderId) {
+  const o = findOrder(orderId);
+  if (o.status !== 'Paid') { toast('Order status changed \u2014 logging is blocked until Paid'); closeModal(); return; }
+  const hours = Math.max(0, parseFloat(val('flHours')) || 0);
+  const km = Math.max(0, parseFloat(val('flKm')) || 0);
+  const personalVehicle = document.getElementById('flVehicle').checked;
+  const reimbursement = (hours * state.platformConfig.hourlyRate) + (personalVehicle ? km * state.platformConfig.kmRate : 0);
+  const log = {
+    id: state.fulfillmentLogs.length + 1, orderId: o.id, worker: val('flWorker'),
+    date: todayISO(), hours, km: personalVehicle ? km : 0, personalVehicle,
+    reimbursement, reviewed: false, payoutApproved: false,
+  };
+  state.fulfillmentLogs.unshift(log);
+  closeModal();
+  toast('Logged ' + hours + 'h' + (personalVehicle ? ' + ' + km + 'km' : '') + ' for ' + o.id + ' \u2014 reimbursement ' + money(reimbursement));
+  renderAll();
+}
+
+/* =========================================================================
+   REIMBURSEMENT LEDGER  (UC-08 Review Logs, UC-09 Approve Payout, UC-10 View Ledger, UC-12 Run Report)
+   ========================================================================= */
+function findFulfillmentLog(id) { return state.fulfillmentLogs.find((l) => l.id === id); }
+function reviewFulfillmentLog(id) {
+  const log = findFulfillmentLog(id);
+  log.reviewed = true;
+  toast('Fulfillment log for ' + log.orderId + ' reviewed \u2014 period marked complete');
+  renderAll();
+}
+function approvePayout(id) {
+  const log = findFulfillmentLog(id);
+  if (!log.reviewed) { toast('Approval is blocked until the log has been reviewed'); return; }
+  if (log.payoutApproved) { toast('Payout already approved for this log'); return; }
+  log.payoutApproved = true;
+  const entry = {
+    id: state.payoutLedger.length + 1, worker: log.worker, date: todayISO(),
+    total: log.reimbursement, orderId: log.orderId,
+  };
+  state.payoutLedger.unshift(entry);
+  toast('Payout of ' + money(log.reimbursement) + ' approved for ' + log.worker);
+  renderAll();
+}
+let ledgerFilter = '';
+function runPayoutReport() {
+  openModal('Run Payout Ledger Report',
+    '<div class="field-row">' +
+      '<div class="field"><label>From</label><input type="date" id="rpFrom"></div>' +
+      '<div class="field"><label>To</label><input type="date" id="rpTo" value="' + todayISO() + '"></div>' +
+    '</div>' +
+    '<div id="rpSummary" class="detail-row"><span>Entries in range</span><span>' + state.payoutLedger.length + '</span></div>' +
+    '<div class="detail-row"><span>Total payout</span><span>' + money(state.payoutLedger.reduce((s, e) => s + e.total, 0)) + '</span></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="exportPayoutReport()">Export CSV</button>'
+  );
+}
+function exportPayoutReport() {
+  if (!state.payoutLedger.length) { toast('No payout entries to export'); return; }
+  const header = 'Worker,Date,Order,Amount\n';
+  const rows = state.payoutLedger.map((e) => [e.worker, e.date, e.orderId, e.total.toFixed(2)].join(',')).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'payout-ledger-report.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('Payout Ledger Report exported');
+  closeModal();
+}
+
+/* =========================================================================
+   USERS  (UC-18)
+   ========================================================================= */
+function findUser(id) { return state.users.find((u) => u.id === id); }
+function userFormFields(u) {
+  u = u || { name: '', roles: 'Sales', email: '', dept: 'Sales', commission: '', team: state.teams[0] ? state.teams[0].name : '' };
+  return (
+    '<div class="field"><label>Name</label><input id="usName" value="' + esc(u.name) + '"></div>' +
+    '<div class="field"><label>Role(s)</label><input id="usRoles" value="' + esc(u.roles) + '"></div>' +
+    '<div class="field"><label>Email</label><input id="usEmail" value="' + esc(u.email) + '"></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>Dept</label><input id="usDept" value="' + esc(u.dept) + '"></div>' +
+      '<div class="field"><label>Commission (%)</label><input type="number" id="usComm" value="' + esc(u.commission) + '"></div>' +
+    '</div>'
+  );
+}
+function openAddUserModal(prefillId) {
+  const prefill = prefillId ? findUser(prefillId) : null;
+  openModal('Add User', userFormFields(prefill),
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitAddUser()">Add User</button>'
+  );
+}
+function validUserInput() {
+  const name = val('usName').trim();
+  const email = val('usEmail').trim();
+  if (!name) { toast('Name is required'); return false; }
+  if (!email || !email.includes('@')) { toast('A valid email is required'); return false; }
+  return true;
+}
+function submitAddUser() {
+  if (!validUserInput()) return;
+  const u = {
+    id: 'U' + (state.users.length + 1) + Math.floor(Math.random() * 999),
+    name: val('usName').trim(), roles: val('usRoles') || 'Sales', email: val('usEmail').trim(),
+    dept: val('usDept') || 'Sales', commission: val('usComm') || '-', status: 'Active',
+    team: state.teams[0] ? state.teams[0].name : '',
+  };
+  state.users.push(u);
+  closeModal();
+  toast('User ' + u.name + ' created');
+  renderAll();
+}
+function viewUser(id) {
+  const u = findUser(id);
+  openModal(u.name,
+    '<div class="detail-row"><span>Roles</span><span>' + esc(u.roles) + '</span></div>' +
+    '<div class="detail-row"><span>Email</span><span>' + esc(u.email) + '</span></div>' +
+    '<div class="detail-row"><span>Dept</span><span>' + esc(u.dept) + '</span></div>' +
+    '<div class="detail-row"><span>Commission (%)</span><span>' + esc(u.commission) + '</span></div>' +
+    '<div class="detail-row"><span>Status</span><span>' + esc(u.status) + '</span></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Close</button>'
+  );
+}
+function editUser(id) {
+  const u = findUser(id);
+  openModal('Edit User', userFormFields(u),
+    '<button class="btn btn-danger" onclick="deleteUser(\'' + id + '\')">Delete</button>' +
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditUser(\'' + id + '\')">Save</button>'
+  );
+}
+function submitEditUser(id) {
+  if (!validUserInput()) return;
+  const u = findUser(id);
+  u.name = val('usName').trim(); u.roles = val('usRoles'); u.email = val('usEmail').trim();
+  u.dept = val('usDept'); u.commission = val('usComm');
+  closeModal();
+  toast('User ' + u.name + ' updated');
+  renderAll();
+}
+function deleteUser(id) {
+  const u = findUser(id);
+  if (!confirm('Delete user ' + u.name + '? This cannot be undone.')) return;
+  state.users = state.users.filter((x) => x.id !== id);
+  closeModal();
+  toast('User ' + u.name + ' deleted');
+  renderAll();
+}
+function duplicateUser(id) { openAddUserModal(id); }
+
+/* =========================================================================
+   TEAMS  (UC-18)
+   ========================================================================= */
+function findTeam(id) { return state.teams.find((t) => t.id === id); }
+function openAddTeamModal() {
+  openModal('Add Team',
+    '<div class="field"><label>Team Name</label><input id="tmName"></div>' +
+    '<div class="field"><label>Manager</label><input id="tmManager"></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>Dept</label><input id="tmDept" value="Sales"></div>' +
+      '<div class="field"><label>Manager Commission (%)</label><input type="number" step="0.1" id="tmComm" value="10"></div>' +
+    '</div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitAddTeam()">Add Team</button>'
+  );
+}
+function submitAddTeam() {
+  const name = val('tmName').trim();
+  if (!name) { toast('Team name is required'); return; }
+  const t = {
+    id: 'TM' + (state.teams.length + 1), name, manager: val('tmManager').trim() || 'Unassigned',
+    members: 0, dept: val('tmDept') || 'Sales', commission: parseFloat(val('tmComm')) || 0,
+  };
+  state.teams.push(t);
+  closeModal();
+  toast('Team ' + t.name + ' created');
+  renderAll();
+}
+function editTeam(id) {
+  const t = findTeam(id);
+  openModal('Edit Team',
+    '<div class="field"><label>Team Name</label><input id="tmName" value="' + esc(t.name) + '"></div>' +
+    '<div class="field"><label>Manager</label><input id="tmManager" value="' + esc(t.manager) + '"></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label># of Members</label><input type="number" id="tmMembers" value="' + t.members + '"></div>' +
+      '<div class="field"><label>Manager Commission (%)</label><input type="number" step="0.1" id="tmComm" value="' + t.commission + '"></div>' +
+    '</div>',
+    '<button class="btn btn-danger" onclick="deleteTeam(\'' + id + '\')">Delete</button>' +
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditTeam(\'' + id + '\')">Save</button>'
+  );
+}
+function deleteTeam(id) {
+  const t = findTeam(id);
+  if (!confirm('Delete team ' + t.name + '?')) return;
+  state.teams = state.teams.filter((x) => x.id !== id);
+  closeModal();
+  toast('Team ' + t.name + ' deleted');
+  renderAll();
+}
+function submitEditTeam(id) {
+  const name = val('tmName').trim();
+  if (!name) { toast('Team name is required'); return; }
+  const t = findTeam(id);
+  t.name = name; t.manager = val('tmManager');
+  t.members = parseInt(val('tmMembers'), 10) || t.members;
+  t.commission = parseFloat(val('tmComm')) || t.commission;
+  closeModal();
+  toast('Team ' + t.name + ' updated');
+  renderAll();
+}
+
+/* =========================================================================
+   ASSETS
+   ========================================================================= */
+function findAsset(id) { return state.assets.find((a) => a.id === id); }
+function openAddAssetModal() {
+  openModal('Add Asset',
+    '<div class="field"><label>Asset Name</label><input id="asName"></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>Category</label><input id="asCategory"></div>' +
+      '<div class="field"><label>Manufacturer</label><input id="asManufacturer"></div>' +
+    '</div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>Location</label><input id="asLocation"></div>' +
+      '<div class="field"><label>Condition</label><select id="asCondition"><option>EXCELLENT</option><option>GOOD</option><option>FAIR</option><option>POOR</option></select></div>' +
+    '</div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitAddAsset()">Add Asset</button>'
+  );
+}
+function submitAddAsset() {
+  const a = {
+    id: 'A' + String(1 + state.assets.length).padStart(4, '0'),
+    name: val('asName') || 'Untitled Asset', category: val('asCategory') || '-',
+    manufacturer: val('asManufacturer') || '-', location: val('asLocation') || '-',
+    status: 'Available', condition: val('asCondition'),
+  };
+  state.assets.push(a);
+  closeModal();
+  toast('Asset ' + a.id + ' added');
+  renderAll();
+}
+function viewAsset(id) {
+  const a = findAsset(id);
+  openModal(a.name,
+    '<div class="detail-row"><span>ID</span><span>' + esc(a.id) + '</span></div>' +
+    '<div class="detail-row"><span>Category</span><span>' + esc(a.category) + '</span></div>' +
+    '<div class="detail-row"><span>Manufacturer</span><span>' + esc(a.manufacturer) + '</span></div>' +
+    '<div class="detail-row"><span>Location</span><span>' + esc(a.location) + '</span></div>' +
+    '<div class="detail-row"><span>Status</span><span>' + esc(a.status) + '</span></div>' +
+    '<div class="detail-row"><span>Condition</span><span>' + esc(a.condition) + '</span></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Close</button>'
+  );
+}
+
+/* =========================================================================
+   LOANS
+   ========================================================================= */
+function findLoan(id) { return state.loans.find((l) => l.id === id); }
+function openAddLoanModal() {
+  const available = state.assets.filter((a) => a.status === 'Available');
+  if (!available.length) { toast('No available assets to loan out'); return; }
+  const assetOpts = available.map((a) => '<option value="' + a.id + '">' + esc(a.name) + ' (' + a.id + ')</option>').join('');
+  openModal('Log a Loan',
+    '<div class="field"><label>Asset</label><select id="lnAsset">' + assetOpts + '</select></div>' +
+    '<div class="field"><label>Borrower</label><input id="lnBorrower"></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>Start Date</label><input type="date" id="lnStart" value="' + todayISO() + '"></div>' +
+      '<div class="field"><label>End Date</label><input type="date" id="lnEnd"></div>' +
+    '</div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitAddLoan()">Log Loan</button>'
+  );
+}
+function submitAddLoan() {
+  const asset = findAsset(val('lnAsset'));
+  const loan = {
+    id: nextId('T0'), assetId: asset.id, assetName: asset.name,
+    borrower: val('lnBorrower') || 'Unspecified', start: val('lnStart') || todayISO(),
+    end: val('lnEnd') || '', status: 'Active', overdue: '-',
+  };
+  asset.status = 'On Loan';
+  state.loans.unshift(loan);
+  closeModal();
+  toast('Loan ' + loan.id + ' logged \u2014 ' + asset.name + ' checked out');
+  renderAll();
+}
+function viewLoan(id) {
+  const l = findLoan(id);
+  openModal('Loan ' + l.id,
+    '<div class="detail-row"><span>Asset</span><span>' + esc(l.assetName) + '</span></div>' +
+    '<div class="detail-row"><span>Asset ID</span><span>' + esc(l.assetId) + '</span></div>' +
+    '<div class="detail-row"><span>Borrower</span><span>' + esc(l.borrower) + '</span></div>' +
+    '<div class="detail-row"><span>Start</span><span>' + fmtDate(l.start) + '</span></div>' +
+    '<div class="detail-row"><span>End</span><span>' + (l.end ? fmtDate(l.end) : '-') + '</span></div>' +
+    '<div class="detail-row"><span>Status</span><span>' + esc(l.status) + '</span></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Close</button>'
+  );
+}
+function returnLoan(id) {
+  const l = findLoan(id);
+  if (l.status === 'Returned') { toast('This loan was already returned'); return; }
+  l.status = 'Returned';
+  const asset = findAsset(l.assetId);
+  if (asset) asset.status = 'Available';
+  toast('Loan ' + l.id + ' closed \u2014 ' + l.assetName + ' is available again');
+  renderAll();
+}
+
+/* =========================================================================
+   REMITTANCES
+   ========================================================================= */
+function openLogRemittanceModal(trader) {
+  const r = state.remittances[trader];
+  if (!r || r.balance <= 0) { toast('No outstanding balance for ' + trader); return; }
+  openModal('Log Remittance \u2014 ' + trader,
+    '<div class="field"><label>Amount</label><input id="rmAmount" value="' + r.balance + '" type="number"></div>' +
+    '<div class="field"><label>Method</label><select id="rmMethod"><option>CASH</option><option>E-TRANSFER</option><option>CHEQUE</option></select></div>' +
+    '<div class="field"><label>Notes</label><textarea id="rmNotes" rows="2" placeholder="No Notes"></textarea></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitRemittance(\'' + esc(trader).replace(/'/g, "\\'") + '\')">Confirm</button>'
+  );
+}
+function submitRemittance(trader) {
+  const amount = parseFloat(val('rmAmount')) || 0;
+  const entry = {
+    id: (state.remittanceHistory.length ? Math.max(...state.remittanceHistory.map((h) => h.id)) : 0) + 1,
+    trader, date: todayISO(), account: money(amount).replace('.00', ''), method: val('rmMethod'),
+    status: 'CONFIRMED', confirmedBy: state.currentUser.initials, notes: val('rmNotes') || 'No Notes',
+  };
+  state.remittanceHistory.unshift(entry);
+  state.remittances[trader] = { unremitted: 0, balance: 0 };
+  closeModal();
+  toast('Remittance logged for ' + trader);
+  renderAll();
+}
+function voidRemittance(id) {
+  if (!confirm('Remove this remittance record?')) return;
+  state.remittanceHistory = state.remittanceHistory.filter((h) => h.id !== id);
+  toast('Remittance record removed');
+  renderAll();
+}
+function viewRemittance(id) {
+  const h = state.remittanceHistory.find((x) => x.id === id);
+  openModal('Remittance #' + h.id,
+    '<div class="detail-row"><span>Trader</span><span>' + esc(h.trader) + '</span></div>' +
+    '<div class="detail-row"><span>Date</span><span>' + fmtDate(h.date) + '</span></div>' +
+    '<div class="detail-row"><span>Account</span><span>' + esc(h.account) + '</span></div>' +
+    '<div class="detail-row"><span>Method</span><span>' + esc(h.method) + '</span></div>' +
+    '<div class="detail-row"><span>Status</span><span>' + esc(h.status) + '</span></div>' +
+    '<div class="detail-row"><span>Confirmed By</span><span>' + esc(h.confirmedBy) + '</span></div>' +
+    '<div class="detail-row"><span>Notes</span><span>' + esc(h.notes) + '</span></div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Close</button>'
+  );
+}
+
+/* =========================================================================
+   RENDER: PROFILE
+   ========================================================================= */
+function pField(label, key) {
+  return '<div class="profile-field"><label>' + esc(label) + '</label><div class="box">' + esc(state.profile[key] || '-') + '</div></div>';
+}
+function renderProfile() {
+  const p = state.profile;
+  const isAdmin = state.currentUser.role === 'Admin';
+  document.getElementById('view-profile').innerHTML =
+    '<h1 class="page-title">My Profile</h1>' +
+    '<div class="profile-card">' +
+      '<button class="add-btn profile-edit-btn" onclick="openEditProfileModal()">' + ICON.edit + ' Edit</button>' +
+      '<div class="profile-avatar-row"><div class="profile-avatar">' + esc(state.currentUser.initials) + '</div></div>' +
+      '<h2 class="profile-section-title">Personal Information</h2>' +
+      '<div class="profile-grid">' +
+        pField('User ID', 'userId') + pField('First name', 'firstName') + pField('Last Name', 'lastName') +
+        pField('Email', 'email') + pField('Phone', 'phone') +
+      '</div>' +
+      '<h2 class="profile-section-title">Address</h2>' +
+      '<div class="profile-grid">' +
+        pField('Address', 'address') + pField('City', 'city') + pField('Province', 'province') +
+        pField('Country', 'country') + pField('Postal Code', 'postalCode') +
+      '</div>' +
+      '<h2 class="profile-section-title">Work Information</h2>' +
+      '<div class="profile-grid" style="margin-bottom:0;">' +
+        pField('Roles', 'roles') + pField('Department', 'department') + pField('Location', 'location') +
+        pField('Start Date', 'startDate') + pField('Status', 'status') +
+      '</div>' +
+    '</div>' +
+    (isAdmin ?
+      '<section class="card" style="margin-top:20px;"><div class="card-head"><div><h2>Platform Settings</h2><p>Admin-only \u2014 commission &amp; reimbursement rates, role permissions</p></div>' +
+      '<div style="display:flex; gap:8px;">' +
+        '<button class="add-btn" onclick="openConfigureRatesModal()">' + ICON.dollar + ' Configure Rates</button>' +
+        '<button class="add-btn" style="background:var(--indigo);" onclick="openPermissionsModal()">' + ICON.check + ' Permissions</button>' +
+      '</div></div>' +
+      '<div style="padding:0 22px 22px; display:flex; gap:28px; flex-wrap:wrap;">' +
+        '<div class="detail-row" style="min-width:180px;"><span>Commission Rate</span><span>' + (state.platformConfig.commissionRate * 100).toFixed(1) + '%</span></div>' +
+        '<div class="detail-row" style="min-width:180px;"><span>Hourly Rate</span><span>' + money(state.platformConfig.hourlyRate) + '/hr</span></div>' +
+        '<div class="detail-row" style="min-width:180px;"><span>Per-KM Rate</span><span>' + money(state.platformConfig.kmRate) + '/km</span></div>' +
+      '</div></section>'
+    : '');
+}
+function openConfigureRatesModal() {
+  const c = state.platformConfig;
+  openModal('Configure Platform Rates',
+    '<div class="field"><label>Commission Rate (%)</label><input type="number" step="0.1" min="0" id="cfgCommission" value="' + (c.commissionRate * 100) + '"></div>' +
+    '<div class="field-row">' +
+      '<div class="field"><label>Hourly Rate ($)</label><input type="number" step="0.5" min="0" id="cfgHourly" value="' + c.hourlyRate + '"></div>' +
+      '<div class="field"><label>Per-KM Rate ($)</label><input type="number" step="0.01" min="0" id="cfgKm" value="' + c.kmRate + '"></div>' +
+    '</div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitConfigureRates()">Save</button>'
+  );
+}
+function submitConfigureRates() {
+  const commission = parseFloat(val('cfgCommission'));
+  const hourly = parseFloat(val('cfgHourly'));
+  const km = parseFloat(val('cfgKm'));
+  if (isNaN(commission) || isNaN(hourly) || isNaN(km) || commission < 0 || hourly < 0 || km < 0) {
+    toast('Enter valid, non-negative rate values'); return;
+  }
+  const c = state.platformConfig;
+  const changes = [];
+  if (commission / 100 !== c.commissionRate) changes.push({ field: 'Commission Rate', from: (c.commissionRate * 100).toFixed(1) + '%', to: commission.toFixed(1) + '%' });
+  if (hourly !== c.hourlyRate) changes.push({ field: 'Hourly Rate', from: money(c.hourlyRate) + '/hr', to: money(hourly) + '/hr' });
+  if (km !== c.kmRate) changes.push({ field: 'Per-KM Rate', from: money(c.kmRate) + '/km', to: money(km) + '/km' });
+  changes.forEach((ch) => state.rateHistory.unshift({ id: state.rateHistory.length + 1, date: todayISO(), by: state.currentUser.name, field: ch.field, from: ch.from, to: ch.to, note: 'Updated via Rate Configuration' }));
+  c.commissionRate = commission / 100;
+  c.hourlyRate = hourly;
+  c.kmRate = km;
+  closeModal();
+  toast(changes.length ? 'Rates updated \u2014 applies to new orders only; existing payouts keep frozen snapshots' : 'No changes made');
+  renderAll();
+}
+function openPermissionsModal() {
+  const roles = Object.keys(state.permissions);
+  const perms = ['manageUsers', 'approveOrders', 'configureRates', 'viewLedger'];
+  const permLabels = { manageUsers: 'Manage Users', approveOrders: 'Approve Orders', configureRates: 'Configure Rates', viewLedger: 'View Ledger' };
+  let table = '<table class="data-table" style="width:100%;"><thead><tr><th>Role</th>' + perms.map((p) => '<th>' + permLabels[p] + '</th>').join('') + '</tr></thead><tbody>';
+  roles.forEach((role) => {
+    table += '<tr><td>' + esc(role) + '</td>' + perms.map((p) =>
+      '<td><input type="checkbox" id="perm_' + role.replace(/\s/g, '') + '_' + p + '" ' + (state.permissions[role][p] ? 'checked' : '') + (role === 'Admin' ? ' disabled' : '') + '></td>'
+    ).join('') + '</tr>';
+  });
+  table += '</tbody></table>';
+  openModal('Manage Role Permissions', table,
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitPermissions()">Save</button>'
+  );
+}
+function submitPermissions() {
+  const roles = Object.keys(state.permissions);
+  const perms = ['manageUsers', 'approveOrders', 'configureRates', 'viewLedger'];
+  const next = {};
+  roles.forEach((role) => {
+    next[role] = {};
+    perms.forEach((p) => {
+      next[role][p] = role === 'Admin' ? true : document.getElementById('perm_' + role.replace(/\s/g, '') + '_' + p).checked;
+    });
+  });
+  const adminHasAll = perms.every((p) => next.Admin[p]);
+  if (!adminHasAll) { toast('Cannot remove Admin access \u2014 change rejected'); return; }
+  state.permissions = next;
+  closeModal();
+  toast('Permission matrix updated');
+  renderAll();
+}
+function openEditProfileModal() {
+  const p = state.profile;
+  const f = (label, key, ph) => '<div class="field"><label>' + esc(label) + '</label><input id="pf_' + key + '" value="' + esc(p[key] === '-' ? '' : p[key]) + '" placeholder="' + (ph || '-') + '"></div>';
+  openModal('Edit Profile',
+    '<div class="field-row">' + f('First name', 'firstName') + f('Last Name', 'lastName') + '</div>' +
+    f('Email', 'email') + f('Phone', 'phone') +
+    '<div class="field-row">' + f('Address', 'address') + f('City', 'city') + '</div>' +
+    '<div class="field-row">' + f('Province', 'province') + f('Country', 'country') + '</div>' +
+    f('Postal Code', 'postalCode') +
+    '<div class="field-row">' + f('Department', 'department') + f('Location', 'location') + '</div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitEditProfile()">Save</button>'
+  );
+}
+function submitEditProfile() {
+  ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'province', 'country', 'postalCode', 'department', 'location'].forEach((key) => {
+    const v = val('pf_' + key);
+    state.profile[key] = v || '-';
+  });
+  closeModal();
+  toast('Profile updated');
+  renderAll();
+}
+
+/* =========================================================================
+   RENDER: DASHBOARD
+   ========================================================================= */
+let leaderboardTab = 'sp'; // 'sp' | 'team'
+
+function computeStats() {
+  const counted = state.orders.filter((o) => o.status !== 'Pending' && o.status !== 'Rejected');
+  const grossRevenue = counted.reduce((s, o) => s + o.totalValue, 0);
+  const rate = state.platformConfig.commissionRate;
+  const totalCommission = grossRevenue * rate;
+  const netProfit = grossRevenue - totalCommission;
+  const roi = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
+  return { grossRevenue, totalCommission, netProfit, roi, count: counted.length };
+}
+function leaderboardRows() {
+  const counted = state.orders.filter((o) => o.status !== 'Pending' && o.status !== 'Rejected');
+  const rate = state.platformConfig.commissionRate;
+  if (leaderboardTab === 'sp') {
+    const byTrader = {};
+    counted.forEach((o) => {
+      byTrader[o.trader] = byTrader[o.trader] || { name: o.trader, team: (state.users.find((u) => u.name === o.trader) || {}).team || '-', txns: 0, gross: 0 };
+      byTrader[o.trader].txns++; byTrader[o.trader].gross += o.totalValue;
+    });
+    return Object.values(byTrader).map((r) => Object.assign({}, r, { commission: r.gross * rate, net: r.gross - r.gross * rate })).sort((a, b) => b.net - a.net);
+  } else {
+    const byTeam = {};
+    counted.forEach((o) => {
+      const team = (state.users.find((u) => u.name === o.trader) || {}).team || 'Unassigned';
+      byTeam[team] = byTeam[team] || { name: team, team: '-', txns: 0, gross: 0 };
+      byTeam[team].txns++; byTeam[team].gross += o.totalValue;
+    });
+    return Object.values(byTeam).map((r) => Object.assign({}, r, { commission: r.gross * rate, net: r.gross - r.gross * rate })).sort((a, b) => b.net - a.net);
+  }
+}
+function renderDashboard() {
+  const s = computeStats();
+  const rows = leaderboardRows();
+  const myOrders = state.orders.filter((o) => o.trader === state.currentUser.name && o.status !== 'Pending' && o.status !== 'Rejected');
+  const myTotal = myOrders.reduce((sum, o) => sum + o.totalValue, 0);
+
+  document.getElementById('view-index').innerHTML =
+    '<h1 class="page-title">Dashboard</h1>' +
+    '<p class="page-sub">Overview of performance, commissions and activity</p>' +
+    '<section class="card"><div class="card-head"><div><h2>Executive Financial Analytics</h2><p>Corporate health metrics</p></div>' +
+      '<div class="segmented">' + ['W', 'M', 'Y', 'Lifetime'].map((x) => '<button class="' + (x === 'M' ? 'active' : '') + '">' + x + '</button>').join('') + '</div></div>' +
+      '<div class="stat-grid">' +
+        '<div class="stat"><div class="label">Gross Revenue</div><div class="value">' + money(s.grossRevenue) + '</div><div class="caption">' + s.count + ' transactions</div></div>' +
+        '<div class="stat"><div class="label">Net Profit</div><div class="value">' + money(s.netProfit) + '</div><div class="caption">Before commission ' + money(s.grossRevenue) + '</div></div>' +
+        '<div class="stat"><div class="label">Total Commission</div><div class="value">' + money(s.totalCommission) + '</div><div class="caption">Sales ' + money(s.totalCommission) + ' &middot; Mgmt $0.00</div></div>' +
+        '<div class="stat"><div class="label">ROI Margin</div><div class="value green">' + s.roi.toFixed(2) + '%</div><div class="caption">Gross costs $0.00</div></div>' +
+      '</div></section>' +
+    '<section class="card"><div class="card-head"><div><h2>Performance Leaderboard</h2><p>Team member evaluation &amp; earnings</p></div>' +
+      '<div class="segmented">' + ['W', 'M', 'Y', 'Lifetime'].map((x) => '<button class="' + (x === 'Lifetime' ? 'active' : '') + '">' + x + '</button>').join('') + '</div></div>' +
+      '<div class="tabs">' +
+        '<div class="tab ' + (leaderboardTab === 'sp' ? 'active' : '') + '" onclick="leaderboardTab=\'sp\'; renderDashboard();">By Salesperson</div>' +
+        '<div class="tab ' + (leaderboardTab === 'team' ? 'active' : '') + '" onclick="leaderboardTab=\'team\'; renderDashboard();">By Team</div>' +
+      '</div>' +
+      '<table class="dash-table"><thead><tr><th>Representative</th><th>Team</th><th>Txns</th><th>Gross Revenue</th><th>Commission</th><th>Net Profit</th></tr></thead><tbody>' +
+      (rows.length ? rows.map((r) => '<tr><td class="name">' + esc(r.name) + '</td><td class="muted">' + esc(r.team) + '</td><td class="muted">' + r.txns + '</td><td class="muted">' + money(r.gross) + '</td><td class="green">' + money(r.commission) + '</td><td class="bold-green">' + money(r.net) + '</td></tr>').join('') :
+        '<tr><td colspan="6" class="muted" style="text-align:center; padding:24px;">No completed transactions yet</td></tr>') +
+      '</tbody></table></section>' +
+    '<section class="card"><div class="card-head"><div><h2>My Commissions</h2><p>Your Personal Earnings</p></div>' +
+      '<div class="segmented">' + ['W', 'M', 'Y', 'Lifetime'].map((x) => '<button class="' + (x === 'W' ? 'active' : '') + '">' + x + '</button>').join('') + '</div></div>' +
+      (myOrders.length ? '<div class="empty-hint">' + myOrders.length + ' transaction(s) totalling ' + money(myTotal) + ' this period.</div>' :
+        '<div class="empty-hint">No commission activity recorded for this period yet. <a href="#" style="color:var(--green-dark); font-weight:700;" onclick="event.preventDefault(); openNewDealModal();">Create a new order &rarr;</a></div>') +
+      '</section>';
+}
+
+/* =========================================================================
+   RENDER: SALES
+   ========================================================================= */
+function orderActionsHtml(o) {
+  const next = NEXT_ACTION[o.status];
+  let extra = '';
+  if (next) extra = '<span onclick="' + next.fn + "('" + o.id + "')" + '" title="' + next.label + '">' + next.icon + '</span>';
+  if (o.status === 'Pending') extra += '<span class="icon-red" onclick="rejectOrder(\'' + o.id + '\')" title="Reject">' + ICON.x + '</span>';
+  return '<div class="row-actions">' +
+    '<span onclick="viewOrder(\'' + o.id + '\')" title="View">' + ICON.eye + '</span>' +
+    '<span onclick="editOrder(\'' + o.id + '\')" title="Edit">' + ICON.edit + '</span>' +
+    '<span onclick="duplicateOrder(\'' + o.id + '\')" title="Duplicate">' + ICON.copy + '</span>' +
+    extra + '</div>';
+}
+function renderSales() {
+  const rows = state.orders.map((o) =>
+    '<tr><td><span class="chk"></span></td><td>' + orderActionsHtml(o) + '</td><td>' + o.id + '</td>' +
+    '<td><span class="chip-text ' + ORDER_CLASS[o.status] + '">' + ORDER_LABEL[o.status] + '</span></td>' +
+    '<td>' + esc(o.side) + '</td><td>' + fmtDate(o.date) + '</td><td>' + esc(o.product) + '</td>' +
+    '<td>' + money(o.totalValue).replace('.00', '') + '</td><td>' + esc(o.trader) + '</td></tr>'
+  ).join('');
+  document.getElementById('view-sales').innerHTML =
+    '<div class="page-head-row"><h1 class="page-title">Sales</h1>' +
+    '<button class="add-btn" onclick="openNewDealModal()">' + ICON.plusSmall + ' Add</button></div>' +
+    '<div class="table-card"><table class="data-table"><thead><tr>' +
+    '<th><span class="chk"></span></th><th>Actions</th><th>ID</th><th>Status</th><th>Side</th><th>Order Date</th><th>Products</th><th>Total Value</th><th>Trader</th>' +
+    '</tr></thead><tbody>' + (rows || '<tr><td colspan="9" class="muted" style="text-align:center; padding:24px;">No sales yet \u2014 click Add to log one</td></tr>') + '</tbody></table>' +
+    '<div class="table-footer">Rows per page: <b>25</b> &nbsp; 1-' + state.orders.length + ' of ' + state.orders.length + '</div></div>';
+}
+
+/* =========================================================================
+   RENDER: APPROVALS
+   ========================================================================= */
+function renderApprovals() {
+  const pending = state.orders.filter((o) => o.status === 'Pending');
+  const rows = pending.map((o) =>
+    '<tr><td><span class="chk"></span></td><td><div class="row-actions">' +
+    '<span onclick="viewOrder(\'' + o.id + '\')" title="View">' + ICON.eye + '</span>' +
+    '<span onclick="approveOrder(\'' + o.id + '\')" title="Approve">' + ICON.check + '</span>' +
+    '<span class="icon-red" onclick="rejectOrder(\'' + o.id + '\')" title="Reject">' + ICON.x + '</span>' +
+    '</div></td><td>' + o.id + '</td><td><span class="chip-text s-pending">PENDING</span></td>' +
+    '<td>' + fmtDate(o.date) + '</td><td>' + esc(o.trader) + '</td><td>' + esc(o.counterparty) + '</td>' +
+    '<td>' + esc(o.product) + '</td><td>' + money(o.totalValue).replace('.00', '') + '</td></tr>'
+  ).join('');
+  document.getElementById('view-approvals').innerHTML =
+    '<h1 class="page-title" style="margin-bottom:18px;">Approvals</h1>' +
+    '<div class="table-card"><table class="data-table"><thead><tr>' +
+    '<th><span class="chk"></span></th><th>Actions</th><th>ID</th><th>Status</th><th>Date</th><th>Trader</th><th>Counterparty</th><th>Products</th><th>Total Value</th>' +
+    '</tr></thead><tbody>' + (rows || '<tr><td colspan="9" class="muted" style="text-align:center; padding:24px;">Nothing awaiting approval</td></tr>') + '</tbody></table>' +
+    '<div class="table-footer">Rows per page: <b>25</b> &nbsp; 1-' + pending.length + ' of ' + pending.length + '</div></div>';
+}
+
+/* =========================================================================
+   RENDER: LOANS
+   ========================================================================= */
+function renderLoans() {
+  const rows = state.loans.map((l) =>
+    '<tr><td><span class="chk"></span></td><td><div class="row-actions">' +
+    '<span onclick="viewLoan(\'' + l.id + '\')" title="View">' + ICON.eye + '</span>' +
+    '<span onclick="returnLoan(\'' + l.id + '\')" title="Mark Returned" class="' + (l.status === 'Returned' ? 'icon-muted' : '') + '">' + ICON.edit + '</span>' +
+    '</div></td><td>' + l.id + '</td><td>' + esc(l.assetName) + '</td><td>' + esc(l.assetId) + '</td>' +
+    '<td>' + esc(l.borrower) + '</td><td>' + fmtDate(l.start) + '</td><td>' + (l.end ? fmtDate(l.end) : '-') + '</td>' +
+    '<td><span class="chip-text ' + (l.status === 'Active' ? 's-good' : 's-pending') + '">' + l.status.toUpperCase() + '</span></td><td>' + esc(l.overdue) + '</td></tr>'
+  ).join('');
+  document.getElementById('view-loans').innerHTML =
+    '<div class="page-head-row"><h1 class="page-title">Loans</h1>' +
+    '<button class="add-btn" onclick="openAddLoanModal()">' + ICON.plusSmall + ' Add</button></div>' +
+    '<div class="table-card"><table class="data-table"><thead><tr>' +
+    '<th><span class="chk"></span></th><th>Actions</th><th>ID</th><th>Asset Name</th><th>Asset ID</th><th>Borrower</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Overdue</th>' +
+    '</tr></thead><tbody>' + (rows || '<tr><td colspan="10" class="muted" style="text-align:center; padding:24px;">No active loans \u2014 click Add to log one</td></tr>') + '</tbody></table>' +
+    '<div class="table-footer">Rows per page: <b>25</b> &nbsp; 1-' + state.loans.length + ' of ' + state.loans.length + '</div></div>';
+}
+
+/* =========================================================================
+   RENDER: USERS
+   ========================================================================= */
+function renderUsers() {
+  const rows = state.users.map((u) =>
+    '<tr><td><span class="chk"></span></td><td><div class="name-cell"><span class="avatar-sm"></span>' + esc(u.name) + '</div></td>' +
+    '<td>' + esc(u.roles) + '</td><td>' + esc(u.email) + '</td><td>' + esc(u.dept) + '</td><td>' + esc(u.commission) + '</td><td>' + esc(u.status) + '</td>' +
+    '<td><div class="row-actions">' +
+    '<span onclick="viewUser(\'' + u.id + '\')" title="View">' + ICON.eye + '</span>' +
+    '<span onclick="editUser(\'' + u.id + '\')" title="Edit">' + ICON.edit + '</span>' +
+    '<span onclick="duplicateUser(\'' + u.id + '\')" title="Duplicate">' + ICON.copy + '</span>' +
+    '</div></td></tr>'
+  ).join('');
+  document.getElementById('view-users').innerHTML =
+    '<div class="page-head-row"><h1 class="page-title">Users</h1>' +
+    '<button class="add-btn" onclick="openAddUserModal()">' + ICON.plusSmall + ' Add</button></div>' +
+    '<div class="table-card"><table class="data-table"><thead><tr>' +
+    '<th><span class="chk"></span></th><th>Name</th><th>Roles</th><th>Email</th><th>Dept</th><th>Commission (%)</th><th>Status</th><th>Action</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div class="table-footer">Rows per page: <b>25</b> &nbsp; 1-' + state.users.length + ' of ' + state.users.length + '</div></div>';
+}
+
+/* =========================================================================
+   RENDER: TEAMS
+   ========================================================================= */
+function renderTeams() {
+  const rows = state.teams.map((t) =>
+    '<tr><td><span class="chk"></span></td><td>' + esc(t.name) + '</td><td>' + esc(t.manager) + '</td>' +
+    '<td>' + t.members + '</td><td>' + esc(t.dept) + '</td><td>' + t.commission.toFixed(1) + '%</td>' +
+    '<td><div class="row-actions"><span onclick="editTeam(\'' + t.id + '\')" title="Edit">' + ICON.edit + '</span></div></td></tr>'
+  ).join('');
+  document.getElementById('view-teams').innerHTML =
+    '<div class="page-head-row"><h1 class="page-title">Teams</h1>' +
+    '<button class="add-btn" onclick="openAddTeamModal()">' + ICON.plusSmall + ' Add</button></div>' +
+    '<div class="table-card"><table class="data-table"><thead><tr>' +
+    '<th><span class="chk"></span></th><th>Team Name</th><th>Manager</th><th># of Members</th><th>Dept</th><th>Manager Commission (%)</th><th>Actions</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div class="table-footer">Rows per page: <b>25</b> &nbsp; 1-' + state.teams.length + ' of ' + state.teams.length + '</div></div>';
+}
+
+/* =========================================================================
+   RENDER: ASSETS
+   ========================================================================= */
+function renderAssets() {
+  const rows = state.assets.map((a) =>
+    '<tr><td><span class="chk"></span></td><td><div class="row-actions"><span onclick="viewAsset(\'' + a.id + '\')" title="View">' + ICON.eye + '</span></div></td>' +
+    '<td>' + a.id + '</td><td>' + esc(a.name) + '</td><td>' + esc(a.category) + '</td><td>' + esc(a.manufacturer) + '</td>' +
+    '<td>' + esc(a.location) + '</td><td><span class="chip-text ' + (a.status === 'Available' ? 's-good' : 's-pending') + '">' + esc(a.status) + '</span></td>' +
+    '<td>' + esc(a.condition) + '</td></tr>'
+  ).join('');
+  document.getElementById('view-assets').innerHTML =
+    '<div class="page-head-row"><h1 class="page-title">Assets</h1>' +
+    '<button class="add-btn" onclick="openAddAssetModal()">' + ICON.plusSmall + ' Add</button></div>' +
+    '<div class="table-card"><table class="data-table"><thead><tr>' +
+    '<th><span class="chk"></span></th><th>Actions</th><th>ID</th><th>Asset Name</th><th>Category</th><th>Manufacturer</th><th>Location</th><th>Status</th><th>Condition</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div class="table-footer">Rows per page: <b>25</b> &nbsp; 1-' + state.assets.length + ' of ' + state.assets.length + '</div></div>';
+}
+
+/* =========================================================================
+   RENDER: REMITTANCES
+   ========================================================================= */
+function renderRemittances() {
+  const cards = Object.keys(state.remittances).map((trader) => {
+    const r = state.remittances[trader];
+    return '<div class="remit-card"><div class="remit-name">' + esc(trader) + '</div>' +
+      '<div class="remit-meta-row"><div><div class="remit-meta">' + r.unremitted + ' unremitted transactions</div>' +
+      '<div class="remit-amount">' + money(r.balance) + '</div></div>' +
+      '<button class="log-btn" ' + (r.balance <= 0 ? 'disabled' : '') + ' onclick="openLogRemittanceModal(\'' + esc(trader).replace(/'/g, "\\'") + '\')">Log Remittance</button></div></div>';
+  }).join('');
+  const rows = state.remittanceHistory.map((h) =>
+    '<tr><td><span class="chk"></span></td><td><div class="row-actions">' +
+    '<span onclick="viewRemittance(' + h.id + ')" title="View">' + ICON.eye + '</span>' +
+    '<span class="icon-red" onclick="voidRemittance(' + h.id + ')" title="Remove">' + ICON.x + '</span>' +
+    '</div></td><td>' + h.id + '</td><td>' + esc(h.trader) + '</td><td>' + fmtDate(h.date) + '</td>' +
+    '<td>' + esc(h.account) + '</td><td>' + esc(h.method) + '</td><td><span class="chip-text s-good">' + h.status + '</span></td><td>' + esc(h.notes) + '</td></tr>'
+  ).join('');
+  document.getElementById('view-remittances').innerHTML =
+    '<h1 class="page-title" style="margin-bottom:2px;">Remitances</h1>' +
+    '<h2 class="section-title">Outstanding Cash Balances</h2>' +
+    '<div class="remit-grid">' + cards + '</div>' +
+    '<h2 class="section-title">Remittance History</h2>' +
+    '<div class="table-card"><table class="data-table"><thead><tr>' +
+    '<th><span class="chk"></span></th><th>Actions</th><th>ID</th><th>Trader</th><th>Date</th><th>Account</th><th>Method</th><th>Status</th><th>Confirmed By</th>' +
+    '</tr></thead><tbody>' + (rows || '<tr><td colspan="9" class="muted" style="text-align:center; padding:24px;">No remittances logged yet</td></tr>') + '</tbody></table>' +
+    '<div class="table-footer">Rows per page: <b>25</b> &nbsp; 1-' + state.remittanceHistory.length + ' of ' + state.remittanceHistory.length + '</div></div>';
+}
+
+/* =========================================================================
+   RENDER: REPORTS  (Fulfillment & Reimbursement Ledger)
+   ========================================================================= */
+function renderReports() {
+  const logs = state.fulfillmentLogs.filter((l) => !ledgerFilter || l.worker.toLowerCase().includes(ledgerFilter.toLowerCase()));
+  const logRows = logs.map((l) =>
+    '<tr><td>' + l.orderId + '</td><td>' + esc(l.worker) + '</td><td>' + fmtDate(l.date) + '</td>' +
+    '<td>' + l.hours + 'h</td><td>' + (l.personalVehicle ? l.km + ' km' : '\u2014') + '</td>' +
+    '<td class="green" style="font-weight:700;">' + money(l.reimbursement) + '</td>' +
+    '<td><span class="chip-text ' + (l.reviewed ? 's-good' : 's-pending') + '">' + (l.reviewed ? 'REVIEWED' : 'PENDING') + '</span></td>' +
+    '<td><div class="row-actions">' +
+      (!l.reviewed ? '<span onclick="reviewFulfillmentLog(' + l.id + ')" title="Mark Reviewed">' + ICON.check + '</span>' : '') +
+      (l.reviewed && !l.payoutApproved ? '<span onclick="approvePayout(' + l.id + ')" title="Approve Payout">' + ICON.dollar + '</span>' : '') +
+      (l.payoutApproved ? '<span class="chip-text s-good" style="font-size:11px;">PAID OUT</span>' : '') +
+    '</div></td></tr>'
+  ).join('');
+
+  const ledgerRows = state.payoutLedger.filter((e) => !ledgerFilter || e.worker.toLowerCase().includes(ledgerFilter.toLowerCase())).map((e) =>
+    '<tr><td>' + e.id + '</td><td>' + esc(e.worker) + '</td><td>' + fmtDate(e.date) + '</td><td>' + esc(e.orderId) + '</td>' +
+    '<td class="bold-green">' + money(e.total) + '</td></tr>'
+  ).join('');
+
+  document.getElementById('view-reports').innerHTML =
+    '<h1 class="page-title">Reports</h1>' +
+    '<p class="page-sub">Fulfillment review, reimbursement payouts, and exports</p>' +
+    '<section class="card"><div class="card-head"><div><h2>Fulfillment Logs</h2><p>Review hours &amp; distance, then approve reimbursement payouts</p></div></div>' +
+    '<div class="table-card" style="border:none; border-radius:0;"><table class="data-table"><thead><tr>' +
+    '<th>Order</th><th>Worker</th><th>Date</th><th>Hours</th><th>Distance</th><th>Reimbursement</th><th>Status</th><th>Actions</th>' +
+    '</tr></thead><tbody>' + (logRows || '<tr><td colspan="8" class="muted" style="text-align:center; padding:24px;">No fulfillment logs yet \u2014 log hours from a Paid order\'s detail view</td></tr>') + '</tbody></table></div></section>' +
+    '<section class="card"><div class="card-head"><div><h2>Reimbursement Ledger</h2><p>Approved payouts to fulfillment workers</p></div>' +
+    '<button class="add-btn" onclick="runPayoutReport()">Run Payout Report</button></div>' +
+    '<div style="padding:0 22px 16px;"><input class="ledger-filter" placeholder="Filter by worker\u2026" oninput="ledgerFilter=this.value; renderReports();" value="' + esc(ledgerFilter) + '"></div>' +
+    '<div class="table-card" style="border:none; border-radius:0;"><table class="data-table"><thead><tr>' +
+    '<th>#</th><th>Worker</th><th>Date</th><th>Order</th><th>Amount</th>' +
+    '</tr></thead><tbody>' + (ledgerRows || '<tr><td colspan="5" class="muted" style="text-align:center; padding:24px;">No approved payouts yet</td></tr>') + '</tbody></table></div>' +
+    '<div class="table-footer">Total paid out: <b>' + money(state.payoutLedger.reduce((s, e) => s + e.total, 0)) + '</b></div></section>';
+}
+
+/* =========================================================================
+   RATE CONFIGURATION  (new feature #1)
+   ========================================================================= */
+function renderRates() {
+  const c = state.platformConfig;
+  const canEdit = state.permissions[state.currentUser.role] && state.permissions[state.currentUser.role].configureRates;
+  const rateCard = (label, value, sub) =>
+    '<div class="card" style="flex:1; min-width:200px; padding:18px 22px;">' +
+      '<div style="font-size:11.5px; font-weight:700; color:var(--muted); letter-spacing:.05em; text-transform:uppercase;">' + label + '</div>' +
+      '<div style="font-size:26px; font-weight:800; margin:6px 0 2px;">' + value + '</div>' +
+      '<div style="font-size:12px; color:var(--muted);">' + sub + '</div>' +
+    '</div>';
+  const histRows = state.rateHistory.map((h) =>
+    '<tr><td>' + fmtDate(h.date) + '</td><td>' + esc(h.by) + '</td><td>' + esc(h.field) + '</td><td>' + esc(h.from) + '</td><td><b>' + esc(h.to) + '</b></td><td class="muted">' + esc(h.note) + '</td></tr>'
+  ).join('');
+  const userRows = state.users.map((u) =>
+    '<tr><td>' + esc(u.name) + '</td><td>' + esc(u.roles) + '</td><td><b>' + u.commission.toFixed(1) + '%</b></td>' +
+    '<td style="text-align:right;">' + (canEdit ? '<button class="btn btn-secondary" style="padding:5px 12px; font-size:12px;" onclick="openUserCommissionModal(\'' + u.id + '\')">Edit</button>' : '<span class="muted">\u2014</span>') + '</td></tr>'
+  ).join('');
+  document.getElementById('view-rates').innerHTML =
+    '<h1 class="page-title">Rate Configuration</h1>' +
+    '<p class="page-sub">Commission and reimbursement rates \u2014 changes apply to new orders only; approved payouts keep their frozen snapshot</p>' +
+    '<div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;">' +
+      rateCard('Default Commission', (c.commissionRate * 100).toFixed(1) + '%', 'Applied when no user/team override') +
+      rateCard('Hourly Rate', money(c.hourlyRate) + '/hr', 'Fulfillment labour reimbursement') +
+      rateCard('Per-KM Rate', money(c.kmRate) + '/km', 'Personal-vehicle mileage') +
+    '</div>' +
+    '<section class="card" style="margin-bottom:20px;"><div class="card-head"><div><h2>Platform Rates</h2><p>' + (canEdit ? 'Admin \u2014 edits are audit-logged below' : 'Read-only \u2014 your role cannot configure rates') + '</p></div>' +
+      (canEdit ? '<button class="add-btn" onclick="openConfigureRatesModal()">' + ICON.dollar + ' Configure Rates</button>' : '') + '</div></section>' +
+    '<section class="card" style="margin-bottom:20px;"><div class="card-head"><div><h2>Per-User Commission Overrides</h2><p>Overrides the platform default for individual salespeople</p></div></div>' +
+      '<div class="table-card" style="border:none; border-radius:0;"><table class="data-table"><thead><tr><th>User</th><th>Role</th><th>Commission</th><th style="text-align:right;">Actions</th></tr></thead><tbody>' + userRows + '</tbody></table></div></section>' +
+    '<section class="card"><div class="card-head"><div><h2>Rate Change History</h2><p>Immutable audit trail of every rate change</p></div></div>' +
+      '<div class="table-card" style="border:none; border-radius:0;"><table class="data-table"><thead><tr><th>Date</th><th>Changed By</th><th>Rate</th><th>From</th><th>To</th><th>Note</th></tr></thead><tbody>' +
+      (histRows || '<tr><td colspan="6" class="muted" style="text-align:center; padding:24px;">No rate changes recorded</td></tr>') + '</tbody></table></div></section>';
+}
+function openUserCommissionModal(userId) {
+  const u = state.users.find((x) => x.id === userId);
+  openModal('Edit Commission \u2014 ' + u.name,
+    '<div class="field"><label>Commission Rate (%)</label><input type="number" step="0.1" min="0" id="ucRate" value="' + u.commission + '"></div>' +
+    '<div class="muted" style="font-size:12px;">Applies to new orders only. Commissions on existing orders keep the rate frozen at approval time.</div>',
+    '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-primary" onclick="submitUserCommission(\'' + userId + '\')">Save</button>'
+  );
+}
+function submitUserCommission(userId) {
+  const u = state.users.find((x) => x.id === userId);
+  const rate = parseFloat(val('ucRate'));
+  if (isNaN(rate) || rate < 0) { toast('Enter a valid, non-negative rate'); return; }
+  if (rate !== u.commission) {
+    state.rateHistory.unshift({ id: state.rateHistory.length + 1, date: todayISO(), by: state.currentUser.name, field: 'Commission \u2014 ' + u.name, from: u.commission.toFixed(1) + '%', to: rate.toFixed(1) + '%', note: 'Per-user override' });
+    u.commission = rate;
+  }
+  closeModal();
+  toast('Commission for ' + u.name + ' set to ' + rate.toFixed(1) + '%');
+  renderAll();
+}
+
+/* =========================================================================
+   NOTIFICATION CENTER  (new feature #8 \u2014 customer email & push/in-app)
+   ========================================================================= */
+function toggleNotifPref(key) {
+  state.notifPrefs[key] = !state.notifPrefs[key];
+  toast((state.notifPrefs[key] ? 'Enabled ' : 'Disabled ') + { customerEmail: 'customer email notifications', customerPush: 'customer push notifications', inApp: 'in-app notifications' }[key]);
+  renderNotifications();
+}
+function renderNotifications() {
+  const p = state.notifPrefs;
+  const prefRow = (key, name, desc) =>
+    '<div class="pref-row"><div><div class="pr-name">' + name + '</div><div class="pr-desc">' + desc + '</div></div>' +
+    '<label class="toggle"><input type="checkbox" ' + (p[key] ? 'checked' : '') + ' onchange="toggleNotifPref(\'' + key + '\')"><span class="track"></span></label></div>';
+  const chipClass = { EMAIL: '', PUSH: ' push', 'IN-APP': ' inapp' };
+  const rows = state.notifications.map((n) =>
+    '<div class="notif-row' + (n.read ? '' : ' unread') + '">' +
+      (n.read ? '<span style="width:8px; flex-shrink:0;"></span>' : '<span class="notif-dot"></span>') +
+      '<div><div class="nr-msg">' + esc(n.msg) + '<span class="chan-chip' + chipClass[n.channel] + '">' + n.channel + '</span></div>' +
+      '<div class="nr-meta">To ' + esc(n.audience) + ' \u2022 ' + esc(n.ts) + '</div></div></div>'
+  ).join('');
+  document.getElementById('view-notifications').innerHTML =
+    '<h1 class="page-title">Notifications</h1>' +
+    '<p class="page-sub">Customer email &amp; push/in-app notifications for order lifecycle events</p>' +
+    '<section class="card" style="margin-bottom:20px;"><div class="card-head"><div><h2>Delivery Channels</h2><p>Which channels fire on approve / paid / ship / deliver / invoice / receipt</p></div></div>' +
+      '<div style="padding:0 22px 10px;">' +
+        prefRow('customerEmail', 'Customer Email', 'Send order status &amp; document emails to the counterparty billing address') +
+        prefRow('customerPush', 'Customer Push', 'Push notifications to the customer portal mobile app') +
+        prefRow('inApp', 'In-App', 'In-app notification feed inside the customer portal') +
+      '</div></section>' +
+    '<section class="card"><div class="card-head"><div><h2>Sent Log</h2><p>' + state.notifications.filter((n) => !n.read).length + ' unread</p></div>' +
+      '<button class="add-btn" onclick="markAllNotifsRead()">' + ICON.check + ' Mark All Read</button></div>' +
+      '<div style="padding:0 22px 10px;">' + (rows || '<div class="muted" style="padding:24px 0; text-align:center;">No notifications sent yet</div>') + '</div></section>';
+  updateBellBadge();
+}
+
+/* =========================================================================
+   GUIDED TOUR  \u2014 "Tardi" the tardigrade mascot
+   ========================================================================= */
+const MASCOT_SVG =
+  '<svg class="tour-mascot" viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg">' +
+    // legs (4 pairs, stubby)
+    '<g fill="#0E7A38">' +
+      '<ellipse cx="52" cy="146" rx="10" ry="14"/><ellipse cx="82" cy="152" rx="10" ry="14"/>' +
+      '<ellipse cx="114" cy="152" rx="10" ry="14"/><ellipse cx="146" cy="146" rx="10" ry="14"/>' +
+    '</g>' +
+    // segmented body
+    '<ellipse cx="100" cy="100" rx="72" ry="52" fill="#16A34B"/>' +
+    '<path d="M46 78 q54 -26 108 0" stroke="#0E7A38" stroke-width="4" fill="none" opacity=".45"/>' +
+    '<path d="M38 100 q62 -22 124 0" stroke="#0E7A38" stroke-width="4" fill="none" opacity=".45"/>' +
+    '<path d="M44 122 q56 -18 112 0" stroke="#0E7A38" stroke-width="4" fill="none" opacity=".45"/>' +
+    // belly
+    '<ellipse cx="100" cy="118" rx="46" ry="26" fill="#C9EBD7"/>' +
+    // face
+    '<circle cx="76" cy="82" r="9" fill="#fff"/><circle cx="76" cy="83" r="4.5" fill="#16181D"/>' +
+    '<circle cx="124" cy="82" r="9" fill="#fff"/><circle cx="124" cy="83" r="4.5" fill="#16181D"/>' +
+    '<circle cx="78" cy="80.5" r="1.6" fill="#fff"/><circle cx="126" cy="80.5" r="1.6" fill="#fff"/>' +
+    '<path d="M88 100 q12 10 24 0" stroke="#16181D" stroke-width="3.5" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="64" cy="96" rx="6" ry="4" fill="#0E7A38" opacity=".35"/>' +
+    '<ellipse cx="136" cy="96" rx="6" ry="4" fill="#0E7A38" opacity=".35"/>' +
+    // hard hat (energy-sector nod)
+    '<path d="M62 58 q38 -34 76 0 l0 8 -76 0 z" fill="#F0B429"/>' +
+    '<rect x="56" y="62" width="88" height="9" rx="4.5" fill="#C87F0A"/>' +
+    '<rect x="94" y="34" width="12" height="26" rx="6" fill="#F0B429"/>' +
+  '</svg>';
+
+const TOUR_STEPS = [
+  { page: 'index', tag: 'Welcome', title: 'Hi, I\u2019m Tardi! 👋', text: 'I\u2019m the Asset Tracker guide for <b>Tartigrade Ltd</b> and <b>Foundation Energy Collective</b>. This upgrade turns scattered spreadsheets, paper timesheets, and email threads into one sales-operations system. Let me show you around!', problem: null },
+  { page: 'index', tag: 'New \u2022 Centralized Dashboard', title: 'One place to see everything', text: 'KPIs, order pipeline, and salesperson/team leaderboards update live as deals move. Managers see performance at a glance instead of asking around.', problem: 'Before: sales data lived in separate spreadsheets per person \u2014 nobody had a company-wide view without hours of manual roll-up.' },
+  { page: 'sales', tag: 'Sales & Order Lifecycle', title: 'Every deal, one pipeline', text: 'Log a deal with the <b>New Deal</b> button, then move it through six statuses: Pending \u2192 Approved \u2192 Paid \u2192 Shipped \u2192 Delivered \u2192 Complete. Each step is one click and fully audited.', problem: 'Before: order status was tracked by memory and email \u2014 deals got stuck or shipped before payment.' },
+  { page: 'approvals', tag: 'Approvals', title: 'Nothing ships un-approved', text: 'Managers approve or reject pending orders here. Payment must be recorded before fulfillment unlocks \u2014 the system enforces the process so people don\u2019t have to.', problem: 'Before: approvals were verbal, so unauthorized or unpaid orders occasionally went out the door.' },
+  { page: 'sales', tag: 'New \u2022 Fulfillment Effort Logging', title: 'Log packing time & distance', text: 'Once an order is Paid, workers hit <b>Log Fulfillment</b> to record hours worked and kilometres driven (personal vehicle). Reimbursement is calculated instantly from the configured rates.', problem: 'Before: fulfillment effort was scribbled on paper timesheets \u2014 workers were under-reimbursed and payroll disputes were common.' },
+  { page: 'rates', tag: 'New \u2022 Rate Configuration', title: 'Rates, managed like adults', text: 'Admins set the default commission, hourly rate, and per-km rate here \u2014 with per-user commission overrides and a full change-history audit trail. Changes apply to <b>new orders only</b>; approved payouts keep a frozen snapshot of the rate they were earned under.', problem: 'Before: a mid-month rate change silently rewrote everyone\u2019s past commissions \u2014 numbers never matched what people were promised.' },
+  { page: 'sales', tag: 'New \u2022 Invoice & Receipt Improvements', title: 'Branded docs in one click', text: 'From any order: <b>Generate Invoice</b> \u2192 <b>Send Invoice</b> emails a TTG/FEC-branded invoice to the counterparty\u2019s billing address. Receipts unlock only after payment, and everything lands in the audit trail.', problem: 'Before: invoices were hand-built in Word, sent late, and receipts were sometimes issued for unpaid orders.' },
+  { page: 'notifications', tag: 'New \u2022 Customer Notifications', title: 'Customers stay in the loop', text: 'Approve, payment, ship, deliver, invoice, receipt \u2014 each event automatically notifies the customer by <b>email</b>, <b>push</b>, and <b>in-app</b> feed. Toggle channels here and watch the sent log. The bell up top tracks unread.', problem: 'Before: customers phoned reps for status updates \u2014 \u201cwhere\u2019s my order?\u201d calls ate hours of selling time each week.' },
+  { page: 'reports', tag: 'Reports & Payout Ledger', title: 'Review \u2192 approve \u2192 pay', text: 'Accountants review fulfillment logs, approve payouts into an immutable ledger, and export CSV reports for any date range. Every dollar traces back to an order.', problem: 'Before: month-end reimbursement was a manual spreadsheet merge that took days and still had errors.' },
+  { page: 'index', tag: 'That\u2019s the tour!', title: 'You\u2019re ready 🎉', text: 'Try it: log a <b>New Deal</b>, walk it through the lifecycle, and watch notifications fire. Click the <b>?</b> in the top bar any time to see me again. Bye for now!', problem: null },
+];
+
+let tourIdx = 0;
+function startTour() { tourIdx = 0; renderTourStep(); }
+function endTour() { const r = document.getElementById('tourRoot'); if (r) r.innerHTML = ''; }
+function tourNext() { if (tourIdx >= TOUR_STEPS.length - 1) { endTour(); return; } tourIdx++; renderTourStep(); }
+function tourBack() { if (tourIdx > 0) { tourIdx--; renderTourStep(); } }
+function renderTourStep() {
+  const s = TOUR_STEPS[tourIdx];
+  showPage(s.page);
+  const dots = TOUR_STEPS.map((_, i) => '<span class="td' + (i === tourIdx ? ' on' : '') + '"></span>').join('');
+  document.getElementById('tourRoot').innerHTML =
+    '<div class="tour-backdrop" onclick="endTour()"></div>' +
+    '<div class="tour-panel">' +
+      '<div class="tour-bubble">' +
+        '<div class="tour-step-tag">' + s.tag + '</div>' +
+        '<h3 class="tour-title">' + s.title + '</h3>' +
+        '<p class="tour-text">' + s.text + '</p>' +
+        (s.problem ? '<div class="tour-problem"><b>Problem it solves \u2014</b> ' + s.problem + '</div>' : '') +
+        '<div class="tour-foot">' +
+          '<div class="tour-dots">' + dots + '</div>' +
+          '<div class="tour-btns">' +
+            '<button class="tour-skip" onclick="endTour()">Skip</button>' +
+            (tourIdx > 0 ? '<button class="btn btn-secondary" onclick="tourBack()">Back</button>' : '') +
+            '<button class="btn btn-primary" onclick="tourNext()">' + (tourIdx === TOUR_STEPS.length - 1 ? 'Finish' : 'Next') + '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      MASCOT_SVG +
+    '</div>';
+}
+
+/* =========================================================================
+   INIT / NAV
+   ========================================================================= */
+function renderAll() {
+  renderDashboard(); renderSales(); renderApprovals(); renderLoans();
+  renderUsers(); renderTeams(); renderAssets(); renderRemittances(); renderProfile(); renderReports();
+  renderRates(); renderNotifications();
+}
+
+function showPage(target) {
+  document.querySelectorAll('.page-view').forEach((v) => { v.style.display = 'none'; v.classList.remove('animate-in'); });
+  const view = document.getElementById('view-' + target);
+  if (view) {
+    view.style.display = 'block';
+    void view.offsetWidth; // restart animation
+    view.classList.add('animate-in');
+  }
+  document.querySelectorAll('.rail-item').forEach((l) => l.classList.remove('active'));
+  const item = document.querySelector('.rail-item[data-target="' + target + '"]');
+  if (item) item.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll('.rail-item').forEach((link) => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    showPage(link.getAttribute('data-target'));
+  });
+});
+document.getElementById('newDealBtn').addEventListener('click', openNewDealModal);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('railToggle').addEventListener('click', () => {
+  document.getElementById('rail').classList.toggle('expanded');
+});
+document.getElementById('helpBtn').addEventListener('click', startTour);
+document.getElementById('bellBtn').addEventListener('click', () => showPage('notifications'));
+document.getElementById('topAvatar').addEventListener('click', () => {
+  showPage('profile');
+});
+
+/* ---- Intro video → app handoff ---- */
+let introDone = false;
+function finishIntro() {
+  if (introDone) return;
+  introDone = true;
+  const ov = document.getElementById('introOverlay');
+  const vid = document.getElementById('introVideo');
+  try { vid.pause(); } catch (e) {}
+  ov.classList.add('fade-out');
+  setTimeout(() => { ov.remove(); startTour(); }, 500);
+}
+const introVid = document.getElementById('introVideo');
+introVid.addEventListener('ended', finishIntro);
+introVid.addEventListener('error', finishIntro); // video missing? go straight to the app
+
+window.state = state; // exposed for debugging in the browser console
+renderAll();
+document.getElementById('view-index').classList.add('animate-in');
+</script>
+</body>
+</html>
